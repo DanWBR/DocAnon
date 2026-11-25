@@ -1,24 +1,244 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:semi="https://irihi.tech/semi"
              x:Class="DocAnon.App.App"
-             RequestedThemeVariant="Default">
+             RequestedThemeVariant="Light">
+
+  <!-- The theme is the one the DWSIM Avalonia UI uses: Semi with the platform UI font,
+       compact 12 px controls, the DWSIM palette and the gradient action buttons. -->
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <x:Double x:Key="ControlContentThemeFontSize">12</x:Double>
+      <x:Double x:Key="FontSizeNormal">12</x:Double>
+      <x:Double x:Key="FontSizeSmall">11</x:Double>
+      <x:Double x:Key="TextControlThemeMinHeight">24</x:Double>
+      <x:Double x:Key="ControlMinHeight">28</x:Double>
+      <Thickness x:Key="ControlPadding">12,5</Thickness>
+      <x:Double x:Key="TabHeaderMinHeight">34</x:Double>
+
+      <!-- AvaloniaEdit resolves this Fluent key as a StaticResource; Semi does not define it. -->
+      <FontFamily x:Key="ContentControlThemeFontFamily">$Default</FontFamily>
+
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="PaletteHeaderBackground">#E6EBF5</SolidColorBrush>
+          <SolidColorBrush x:Key="TabSelectedAccent">#2E7CD6</SolidColorBrush>
+          <SolidColorBrush x:Key="LinkForeground">#1565C0</SolidColorBrush>
+          <SolidColorBrush x:Key="SplitterBrush">#C4C4C4</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsCardBackground">#F7F9FC</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsCardBorder">#E1E7F0</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsChipBackground">#EAF1FB</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsChipForeground">#1F4E8C</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsWarningBackground">#FFF4E0</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsWarningForeground">#8A5300</SolidColorBrush>
+          <SolidColorBrush x:Key="LeakForeground">#B3261E</SolidColorBrush>
+          <LinearGradientBrush x:Key="AppButtonBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0" Color="#FFFFFF" />
+            <GradientStop Offset="1" Color="#EFF3F9" />
+          </LinearGradientBrush>
+          <LinearGradientBrush x:Key="AppButtonBackgroundHover" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0" Color="#F5F9FF" />
+            <GradientStop Offset="1" Color="#E2EAF6" />
+          </LinearGradientBrush>
+          <LinearGradientBrush x:Key="AppButtonBackgroundPressed" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0" Color="#DDE7F5" />
+            <GradientStop Offset="1" Color="#CFDCEF" />
+          </LinearGradientBrush>
+          <SolidColorBrush x:Key="AppButtonBorder" Color="#D3DCE8" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="PaletteHeaderBackground">#2D2D30</SolidColorBrush>
+          <SolidColorBrush x:Key="TabSelectedAccent">#2E7CD6</SolidColorBrush>
+          <SolidColorBrush x:Key="LinkForeground">#5AA9E6</SolidColorBrush>
+          <SolidColorBrush x:Key="SplitterBrush">#3A3A3A</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsCardBackground">#23272F</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsCardBorder">#3A4150</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsChipBackground">#2A3445</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsChipForeground">#BBD3F2</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsWarningBackground">#3A2E1A</SolidColorBrush>
+          <SolidColorBrush x:Key="DetailsWarningForeground">#F0B45A</SolidColorBrush>
+          <SolidColorBrush x:Key="LeakForeground">#F28B82</SolidColorBrush>
+          <LinearGradientBrush x:Key="AppButtonBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0" Color="#3A4150" />
+            <GradientStop Offset="1" Color="#2C323D" />
+          </LinearGradientBrush>
+          <LinearGradientBrush x:Key="AppButtonBackgroundHover" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0" Color="#454D5E" />
+            <GradientStop Offset="1" Color="#353C49" />
+          </LinearGradientBrush>
+          <LinearGradientBrush x:Key="AppButtonBackgroundPressed" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0" Color="#2A303B" />
+            <GradientStop Offset="1" Color="#22272F" />
+          </LinearGradientBrush>
+          <SolidColorBrush x:Key="AppButtonBorder" Color="#4A5261" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
   <Application.Styles>
-    <FluentTheme />
+    <semi:SemiTheme Locale="en-US" />
+    <!-- AvaloniaEdit needs an explicit theme or it draws nothing. -->
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
-    <Style Selector="TextBlock.h2">
-      <Setter Property="FontSize" Value="16" />
+
+    <!-- Menus, context menus and tooltips render in their own popup layer and do not inherit the
+         window font, so they get the size explicitly. -->
+    <Style Selector="Menu, MenuItem, ContextMenu, ToolTip, Window">
+      <Setter Property="FontSize" Value="{DynamicResource FontSizeNormal}" />
+    </Style>
+
+    <!-- Semi leaves the selected tab content at its desired size; the editors and text boxes
+         of the tabs must fill the remaining space. -->
+    <Style Selector="TabControl">
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="TabControl /template/ ContentPresenter#PART_SelectedContentHost">
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="TabItem">
+      <Setter Property="MinHeight" Value="{DynamicResource TabHeaderMinHeight}" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="10,0" />
+      <!-- Semi sets only the selected header in bold, and when the app switches tabs by itself
+           the header keeps the width of the regular text, which cuts the last letter. All
+           headers use the same weight, and the selected one is marked by Semi's accent line. -->
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Semi ignores the Fluent font-size key, so each control reads FontSizeNormal. -->
+    <Style Selector="Button">
+      <Setter Property="FontSize" Value="{DynamicResource FontSizeNormal}" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="MinHeight" Value="{DynamicResource ControlMinHeight}" />
+      <Setter Property="Padding" Value="{DynamicResource ControlPadding}" />
+    </Style>
+    <Style Selector="ToggleButton, TextBox, ComboBox, NumericUpDown, ListBoxItem">
+      <Setter Property="FontSize" Value="{DynamicResource FontSizeNormal}" />
+    </Style>
+    <!-- Buttons stacked in a form column sit on the left, as in the DWSIM dialogs. -->
+    <Style Selector="StackPanel > Button.action, StackPanel > Button.primary">
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <!-- Semi centres text boxes vertically; a multi-line box fills its slot and starts at the top. -->
+    <Style Selector="TextBox[AcceptsReturn=True]">
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Top" />
+    </Style>
+    <Style Selector="CheckBox, RadioButton">
+      <Setter Property="FontSize" Value="{DynamicResource FontSizeNormal}" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="8,0,0,0" />
+      <Setter Property="Margin" Value="0,3,0,3" />
+    </Style>
+
+    <!-- Gradient action buttons from the DWSIM theme. -->
+    <Style Selector="Button.action">
+      <Setter Property="Background" Value="{DynamicResource AppButtonBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppButtonBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Button.action:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AppButtonBackgroundHover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppButtonBorder}" />
+    </Style>
+    <Style Selector="Button.action:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AppButtonBackgroundPressed}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppButtonBorder}" />
+    </Style>
+
+    <!-- The main action of a screen: accent fill with white text, as the DWSIM "Open" button. -->
+    <Style Selector="Button.primary">
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Background" Value="{DynamicResource TabSelectedAccent}" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#2569B8" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#1E5698" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource DetailsCardBorder}" />
+      <Setter Property="Foreground" Value="Gray" />
+    </Style>
+
+    <Style Selector="Button.link">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0,2" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="Foreground" Value="{DynamicResource LinkForeground}" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="TextBlock.TextDecorations" Value="Underline" />
+    </Style>
+
+    <!-- Text and panels -->
+    <Style Selector="TextBlock.groupHeader">
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Margin" Value="0,4,0,6" />
+    </Style>
+    <Style Selector="TextBlock.detailsHeader">
+      <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Opacity" Value="0.6" />
+      <Setter Property="LetterSpacing" Value="0.6" />
     </Style>
     <Style Selector="TextBlock.muted">
       <Setter Property="Opacity" Value="0.7" />
       <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
-    <Style Selector="Border.panel">
-      <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+    <Style Selector="TextBlock.leak">
+      <Setter Property="Foreground" Value="{DynamicResource LeakForeground}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Border.detailsCard">
+      <Setter Property="Background" Value="{DynamicResource DetailsCardBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource DetailsCardBorder}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="4" />
-      <Setter Property="Padding" Value="8" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10" />
+    </Style>
+    <Style Selector="Border.detailsChip">
+      <Setter Property="Background" Value="{DynamicResource DetailsChipBackground}" />
+      <Setter Property="CornerRadius" Value="11" />
+      <Setter Property="Padding" Value="9,3" />
+    </Style>
+    <Style Selector="Border.detailsChip > TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource DetailsChipForeground}" />
+      <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+    </Style>
+    <Style Selector="Border.detailsWarning">
+      <Setter Property="Background" Value="{DynamicResource DetailsWarningBackground}" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10,7" />
+    </Style>
+    <Style Selector="Border.detailsWarning TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource DetailsWarningForeground}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Border.headerBar">
+      <Setter Property="Background" Value="{DynamicResource PaletteHeaderBackground}" />
+    </Style>
+    <Style Selector="Border.entityRow">
+      <Setter Property="BorderBrush" Value="{DynamicResource DetailsCardBorder}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="Padding" Value="4,4" />
     </Style>
   </Application.Styles>
 </Application>

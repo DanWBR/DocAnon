@@ -8,8 +8,9 @@
     <PackageVersion Include="Avalonia" Version="12.2.0" />
     <PackageVersion Include="Avalonia.Desktop" Version="12.2.0" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.2.0" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.2.0" />
     <PackageVersion Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
+    <!-- Same theme as the DWSIM Avalonia UI. -->
+    <PackageVersion Include="Semi.Avalonia" Version="12.1.0.2" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />

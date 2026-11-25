@@ -14,7 +14,7 @@
   <Grid RowDefinitions="Auto,*,Auto">
 
     <!-- Session and profile -->
-    <Border Grid.Row="0" Padding="10,8" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+    <Border Grid.Row="0" Padding="10,8" Classes="headerBar">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
           <TextBlock Text="Sessão:" VerticalAlignment="Center" FontWeight="SemiBold" />
@@ -25,10 +25,10 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-          <Button Content="Abrir" Command="{Binding OpenSessionCommand}" />
-          <Button Content="Apagar" Command="{Binding DeleteSessionCommand}" ToolTip.Tip="Apaga o cofre desta sessão, sobrescrevendo o arquivo." />
+          <Button Classes="action" Content="Abrir" Command="{Binding OpenSessionCommand}" />
+          <Button Classes="action" Content="Apagar" Command="{Binding DeleteSessionCommand}" ToolTip.Tip="Apaga o cofre desta sessão, sobrescrevendo o arquivo." />
           <TextBox Text="{Binding NewSessionLabel}" Width="170" PlaceholderText="rótulo da nova sessão" />
-          <Button Content="Nova sessão" Command="{Binding NewSessionCommand}" />
+          <Button Classes="action" Content="Nova sessão" Command="{Binding NewSessionCommand}" />
           <TextBox Text="{Binding VaultPassword}" PasswordChar="●" Width="150" PlaceholderText="senha do cofre" IsVisible="{Binding UsesPassword}" />
         </StackPanel>
         <TextBlock Grid.Column="1" Text="{Binding SessionTitle}" VerticalAlignment="Center" Margin="16,0" TextTrimming="CharacterEllipsis" />
@@ -41,8 +41,8 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-          <Button Content="Usar" Command="{Binding LoadProfileCommand}" />
-          <Button Content="Sem perfil" Command="{Binding ClearProfileCommand}" />
+          <Button Classes="action" Content="Usar" Command="{Binding LoadProfileCommand}" />
+          <Button Classes="action" Content="Sem perfil" Command="{Binding ClearProfileCommand}" />
         </StackPanel>
       </Grid>
     </Border>
@@ -53,27 +53,27 @@
       <TabItem Header="1. Documentos">
         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
           <StackPanel Spacing="10">
-            <Border x:Name="DropZone" Classes="panel" Height="170" DragDrop.AllowDrop="True" Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+            <Border x:Name="DropZone" Classes="detailsCard" Height="170" DragDrop.AllowDrop="True">
               <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
                 <TextBlock Text="Arraste documentos para cá" FontSize="18" HorizontalAlignment="Center" />
                 <TextBlock Classes="muted" Text="{Binding FileFilterDescription}" HorizontalAlignment="Center" MaxWidth="520" TextAlignment="Center" />
-                <Button x:Name="OpenFilesButton" Content="Escolher arquivos..." HorizontalAlignment="Center" />
+                <Button Classes="action" x:Name="OpenFilesButton" Content="Escolher arquivos..." HorizontalAlignment="Center" />
               </StackPanel>
             </Border>
-            <TextBlock Classes="h2" Text="Ou cole um texto" />
-            <TextBox Text="{Binding PastedText}" AcceptsReturn="True" TextWrapping="Wrap" Height="220" PlaceholderText="cole aqui o texto que você quer enviar à IA" />
-            <Button Content="Analisar texto colado" Command="{Binding AddPastedTextCommand}" />
+            <TextBlock Classes="groupHeader" Text="Ou cole um texto" />
+            <TextBox Text="{Binding PastedText}" AcceptsReturn="True" VerticalContentAlignment="Top" TextWrapping="Wrap" Height="220" PlaceholderText="cole aqui o texto que você quer enviar à IA" />
+            <Button Classes="action" Content="Analisar texto colado" Command="{Binding AddPastedTextCommand}" />
             <TextBlock Classes="muted" Text="O DocAnon lê e anonimiza tudo neste computador. O único acesso de rede possível é ao Ollama local (127.0.0.1), se você o ligar nas configurações." />
           </StackPanel>
           <DockPanel Grid.Column="1">
-            <TextBlock DockPanel.Dock="Top" Classes="h2" Text="Documentos desta sessão" />
+            <TextBlock DockPanel.Dock="Top" Classes="groupHeader" Text="Documentos desta sessão" />
             <ListBox ItemsSource="{Binding Documents}" SelectedItem="{Binding SelectedDocument}">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:DocumentItem">
                   <StackPanel Spacing="2">
                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
                     <TextBlock Classes="muted" Text="{Binding Status}" />
-                    <TextBlock Classes="muted" Text="{Binding Warnings}" Foreground="DarkOrange" IsVisible="{Binding HasWarnings}" />
+                    <TextBlock Classes="muted" Text="{Binding Warnings}" Foreground="{DynamicResource DetailsWarningForeground}" IsVisible="{Binding HasWarnings}" />
                   </StackPanel>
                 </DataTemplate>
               </ListBox.ItemTemplate>
@@ -90,7 +90,7 @@
               <DataTemplate x:DataType="vm:DocumentItem">
                 <StackPanel>
                   <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
-                  <TextBlock Classes="muted" Text="{Binding Status}" FontSize="11" />
+                  <TextBlock Classes="muted" Text="{Binding Status}" FontSize="{DynamicResource FontSizeSmall}" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -134,23 +134,23 @@
 
           <DockPanel Grid.Column="2">
             <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,0">
-              <Button Content="Anonimizar e verificar vazamentos" Command="{Binding ExportCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" />
+              <Button Content="Anonimizar e verificar vazamentos" Command="{Binding ExportCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="primary" />
             </StackPanel>
-            <TextBlock DockPanel.Dock="Top" Classes="h2" Text="O que será alterado" />
+            <TextBlock DockPanel.Dock="Top" Classes="groupHeader" Text="O que será alterado" />
             <ScrollViewer>
               <ItemsControl ItemsSource="{Binding SelectedDocument.Groups, FallbackValue={x:Null}}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:EntityGroup">
-                    <Border Padding="4,3" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                    <Border Classes="entityRow">
                       <Grid ColumnDefinitions="Auto,110,*,Auto" RowDefinitions="Auto,Auto" ToolTip.Tip="{Binding Note}">
-                        <CheckBox IsChecked="{Binding Include}" Grid.RowSpan="2" VerticalAlignment="Top" />
-                        <TextBlock Grid.Column="1" Text="{Binding TypeLabel}" FontSize="11" Opacity="0.8" TextWrapping="Wrap" VerticalAlignment="Center" />
+                        <CheckBox IsChecked="{Binding Include}" Grid.RowSpan="2" VerticalAlignment="Top" Margin="0,0,6,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding TypeLabel}" FontSize="{DynamicResource FontSizeSmall}" Opacity="0.8" TextWrapping="Wrap" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="2" Text="{Binding Text}" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" Margin="4,0" />
                         <TextBlock Grid.Column="3" Text="{Binding Count, StringFormat='×{0}'}" Opacity="0.7" VerticalAlignment="Center" />
                         <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
                           <TextBlock Text="→" Opacity="0.6" VerticalAlignment="Center" />
                           <TextBlock Text="{Binding Preview}" FontFamily="Cascadia Mono, Consolas, monospace" FontSize="12" VerticalAlignment="Center" />
-                          <ComboBox ItemsSource="{x:Static vm:MainViewModel.QuantityActions}" SelectedIndex="{Binding ActionIndex}" IsVisible="{Binding IsQuantity}" FontSize="11" MinHeight="24" Padding="4,0" />
+                          <ComboBox ItemsSource="{x:Static vm:MainViewModel.QuantityActions}" SelectedIndex="{Binding ActionIndex}" IsVisible="{Binding IsQuantity}" FontSize="{DynamicResource FontSizeSmall}" MinHeight="24" Padding="4,0" />
                           <TextBlock Text="{Binding Detectors}" FontSize="10" Opacity="0.5" VerticalAlignment="Center" />
                         </StackPanel>
                       </Grid>
@@ -168,28 +168,28 @@
         <Grid ColumnDefinitions="*,420" ColumnSpacing="10">
           <DockPanel>
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
-              <Button x:Name="CopyTextButton" Content="Copiar texto" IsEnabled="{Binding CanCopy}" Classes="accent" />
-              <Button x:Name="SavePackageButton" Content="Salvar pacote..." IsEnabled="{Binding CanCopy}" />
+              <Button x:Name="CopyTextButton" Content="Copiar texto" IsEnabled="{Binding CanCopy}" Classes="primary" />
+              <Button Classes="action" x:Name="SavePackageButton" Content="Salvar pacote..." IsEnabled="{Binding CanCopy}" />
               <TextBlock Text="{Binding ExportSummary}" VerticalAlignment="Center" />
             </StackPanel>
-            <TextBox Text="{Binding ExportText}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas, monospace" />
+            <TextBox Text="{Binding ExportText}" IsReadOnly="True" AcceptsReturn="True" VerticalContentAlignment="Top" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas, monospace" />
           </DockPanel>
           <DockPanel Grid.Column="1">
             <StackPanel DockPanel.Dock="Top" Spacing="6">
-              <TextBlock Classes="h2" Text="Checagem de vazamento" />
+              <TextBlock Classes="groupHeader" Text="Checagem de vazamento" />
               <ItemsControl ItemsSource="{Binding Leaks}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:LeakItem">
                     <StackPanel Margin="0,2">
-                      <TextBlock Text="{Binding Text}" FontWeight="SemiBold" Foreground="Firebrick" TextWrapping="Wrap" />
-                      <TextBlock Classes="muted" Text="{Binding Reason}" FontSize="11" />
-                      <TextBlock Classes="muted" Text="{Binding Where}" FontSize="11" />
+                      <TextBlock Classes="leak" Text="{Binding Text}" />
+                      <TextBlock Classes="muted" Text="{Binding Reason}" FontSize="{DynamicResource FontSizeSmall}" />
+                      <TextBlock Classes="muted" Text="{Binding Where}" FontSize="{DynamicResource FontSizeSmall}" />
                     </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <CheckBox IsChecked="{Binding LeaksAcknowledged}" Content="Revisei os pontos acima e quero liberar a cópia" />
-              <TextBlock Classes="h2" Text="Imagens tarjadas" />
+              <TextBlock Classes="groupHeader" Text="Imagens tarjadas" />
             </StackPanel>
             <ScrollViewer>
               <ItemsControl x:Name="ImagesList" ItemsSource="{Binding ExportImages}">
@@ -198,7 +198,7 @@
                     <StackPanel Margin="0,4" Spacing="4">
                       <TextBlock Text="{Binding Source}" />
                       <Image Source="{Binding Bitmap}" MaxHeight="260" Stretch="Uniform" />
-                      <Button Content="Copiar imagem" Tag="{Binding}" Click="CopyImage_Click" IsEnabled="{Binding $parent[Window].((vm:MainViewModel)DataContext).CanCopy}" />
+                      <Button Classes="action" Content="Copiar imagem" Tag="{Binding}" Click="CopyImage_Click" IsEnabled="{Binding $parent[Window].((vm:MainViewModel)DataContext).CanCopy}" />
                     </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -211,15 +211,15 @@
       <!-- 4. Reidentification -->
       <TabItem Header="4. Reidentificação">
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,*,Auto" ColumnSpacing="10">
-          <TextBlock Classes="h2" Text="Cole a resposta da IA" />
-          <TextBox Grid.Row="1" Text="{Binding AnswerText}" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas, monospace" />
+          <TextBlock Classes="groupHeader" Text="Cole a resposta da IA" />
+          <TextBox Grid.Row="1" Text="{Binding AnswerText}" AcceptsReturn="True" VerticalContentAlignment="Top" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas, monospace" />
           <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
-            <Button Content="Restaurar valores reais" Command="{Binding RestoreCommand}" Classes="accent" />
+            <Button Content="Restaurar valores reais" Command="{Binding RestoreCommand}" Classes="primary" />
             <TextBlock Classes="muted" Text="Use a mesma sessão em que o documento foi anonimizado." VerticalAlignment="Center" />
           </StackPanel>
-          <TextBlock Grid.Column="1" Classes="h2" Text="Texto com os valores reais" />
+          <TextBlock Grid.Column="1" Classes="groupHeader" Text="Texto com os valores reais" />
           <Grid Grid.Column="1" Grid.Row="1" RowDefinitions="*,Auto,160">
-            <TextBox Text="{Binding RestoredText}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas, monospace" />
+            <TextBox Text="{Binding RestoredText}" IsReadOnly="True" AcceptsReturn="True" VerticalContentAlignment="Top" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas, monospace" />
             <TextBlock Grid.Row="1" Text="{Binding RestoreSummary}" TextWrapping="Wrap" Margin="0,6" />
             <ListBox Grid.Row="2" ItemsSource="{Binding RestoredItems}">
               <ListBox.ItemTemplate>
@@ -234,7 +234,7 @@
               </ListBox.ItemTemplate>
             </ListBox>
           </Grid>
-          <Button Grid.Column="1" Grid.Row="2" x:Name="CopyRestoredButton" Content="Copiar texto restaurado" Margin="0,6,0,0" />
+          <Button Classes="action" Grid.Column="1" Grid.Row="2" x:Name="CopyRestoredButton" Content="Copiar texto restaurado" Margin="0,6,0,0" />
         </Grid>
       </TabItem>
 
@@ -243,12 +243,12 @@
         <ScrollViewer>
           <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
             <StackPanel Spacing="8">
-              <TextBlock Classes="h2" Text="Perfil da empresa" />
+              <TextBlock Classes="groupHeader" Text="Perfil da empresa" />
               <TextBlock Classes="muted" Text="Termos sempre anonimizados, exceções, logotipos e regiões fixas. O perfil é salvo cifrado." />
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <TextBox Text="{Binding ProfileName}" Width="260" PlaceholderText="nome do perfil" />
-                <Button Content="Novo perfil" Command="{Binding NewProfileCommand}" />
-                <Button Content="Salvar perfil" Command="{Binding SaveProfileCommand}" Classes="accent" />
+                <Button Classes="action" Content="Novo perfil" Command="{Binding NewProfileCommand}" />
+                <Button Content="Salvar perfil" Command="{Binding SaveProfileCommand}" Classes="primary" />
               </StackPanel>
               <TextBlock Text="Termos (variantes separadas por ;)" FontWeight="SemiBold" />
               <ItemsControl ItemsSource="{Binding ProfileTerms}">
@@ -258,16 +258,16 @@
                       <TextBox Text="{Binding Text}" PlaceholderText="termo" />
                       <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.EntityTypes}" SelectedItem="{Binding Type}" HorizontalAlignment="Stretch" />
                       <TextBox Grid.Column="2" Text="{Binding Aliases}" PlaceholderText="variantes" />
-                      <Button Grid.Column="3" Content="✕" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RemoveProfileTermCommand}" CommandParameter="{Binding}" />
+                      <Button Classes="action" Grid.Column="3" Content="✕" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RemoveProfileTermCommand}" CommandParameter="{Binding}" />
                     </Grid>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button Content="Adicionar termo" Command="{Binding AddProfileTermCommand}" />
+              <Button Classes="action" Content="Adicionar termo" Command="{Binding AddProfileTermCommand}" />
               <TextBlock Text="Exceções (nunca anonimizar), uma por linha" FontWeight="SemiBold" />
-              <TextBox Text="{Binding ProfileExceptions}" AcceptsReturn="True" Height="90" />
+              <TextBox Text="{Binding ProfileExceptions}" AcceptsReturn="True" VerticalContentAlignment="Top" Height="90" />
               <TextBlock Text="Padrões de prefixo de unidade nas tags (regex), um por linha" FontWeight="SemiBold" />
-              <TextBox Text="{Binding ProfileUnitPatterns}" AcceptsReturn="True" Height="60" PlaceholderText="vazio: prefixos numéricos como 2100- contam como unidade" />
+              <TextBox Text="{Binding ProfileUnitPatterns}" AcceptsReturn="True" VerticalContentAlignment="Top" Height="60" PlaceholderText="vazio: prefixos numéricos como 2100- contam como unidade" />
               <CheckBox IsChecked="{Binding ProfileAnonymizeAllTags}" Content="Anonimizar todas as tags de equipamentos e instrumentos" />
               <CheckBox IsChecked="{Binding ProfileCoverSmallImages}" Content="Cobrir imagens pequenas nos desenhos (logotipos, carimbos, assinaturas)" />
               <TextBlock Text="Logotipos procurados em cada página" FontWeight="SemiBold" />
@@ -276,12 +276,12 @@
                   <DataTemplate x:DataType="prof:LogoTemplate">
                     <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2">
                       <TextBlock Text="{Binding Name}" VerticalAlignment="Center" Width="200" />
-                      <Button Content="Remover" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RemoveLogoCommand}" CommandParameter="{Binding}" />
+                      <Button Classes="action" Content="Remover" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RemoveLogoCommand}" CommandParameter="{Binding}" />
                     </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button x:Name="AddLogoButton" Content="Adicionar logotipo (PNG recortado)..." />
+              <Button Classes="action" x:Name="AddLogoButton" Content="Adicionar logotipo (PNG recortado)..." />
               <TextBlock Text="Regiões fixas (frações da página, 0 a 1)" FontWeight="SemiBold" />
               <ItemsControl ItemsSource="{Binding ProfileRegions}">
                 <ItemsControl.ItemTemplate>
@@ -292,30 +292,30 @@
                       <NumericUpDown Value="{Binding Y}" Minimum="0" Maximum="1" Increment="0.01" FormatString="0.00" Width="100" />
                       <NumericUpDown Value="{Binding Width}" Minimum="0" Maximum="1" Increment="0.01" FormatString="0.00" Width="100" />
                       <NumericUpDown Value="{Binding Height}" Minimum="0" Maximum="1" Increment="0.01" FormatString="0.00" Width="100" />
-                      <Button Content="✕" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RemoveRegionCommand}" CommandParameter="{Binding}" />
+                      <Button Classes="action" Content="✕" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RemoveRegionCommand}" CommandParameter="{Binding}" />
                     </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button Content="Adicionar região" Command="{Binding AddRegionCommand}" />
+              <Button Classes="action" Content="Adicionar região" Command="{Binding AddRegionCommand}" />
             </StackPanel>
 
             <StackPanel Grid.Column="1" Spacing="8">
-              <TextBlock Classes="h2" Text="Detecção" />
+              <TextBlock Classes="groupHeader" Text="Detecção" />
               <CheckBox IsChecked="{Binding Settings.UseNer}" Content="Reconhecimento de nomes (modelo NER local)" />
               <CheckBox IsChecked="{Binding Settings.UseFirstNames}" Content="Lista de prenomes comuns (ajuda em carimbos e tabelas)" />
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <TextBlock Text="Resolução das imagens (dpi):" VerticalAlignment="Center" />
                 <NumericUpDown Value="{Binding Settings.Dpi}" Minimum="100" Maximum="400" Increment="50" Width="130" />
               </StackPanel>
-              <TextBlock Classes="h2" Text="Escala dos números" />
+              <TextBlock Classes="groupHeader" Text="Escala dos números" />
               <TextBlock Classes="muted" Text="Cada nova sessão sorteia dois fatores secretos dentro deste intervalo, longe de 1." />
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <NumericUpDown Value="{Binding Settings.ScaleMin}" Minimum="0.1" Maximum="0.8" Increment="0.05" FormatString="0.00" Width="130" />
                 <TextBlock Text="a" VerticalAlignment="Center" />
                 <NumericUpDown Value="{Binding Settings.ScaleMax}" Minimum="1.25" Maximum="10" Increment="0.25" FormatString="0.00" Width="130" />
               </StackPanel>
-              <TextBlock Classes="h2" Text="Cofres" />
+              <TextBlock Classes="groupHeader" Text="Cofres" />
               <ComboBox SelectedItem="{Binding Settings.Protection}" Width="260">
                 <ComboBox.Items>
                   <x:String>windows</x:String>
@@ -323,18 +323,18 @@
                 </ComboBox.Items>
               </ComboBox>
               <TextBlock Classes="muted" Text="windows: o cofre só abre com o seu usuário do Windows. senha: o cofre abre em qualquer computador com a senha." />
-              <TextBlock Classes="h2" Text="LLM local (Ollama)" />
+              <TextBlock Classes="groupHeader" Text="LLM local (Ollama)" />
               <CheckBox IsChecked="{Binding Settings.UseLlm}" Content="Usar o Ollama para sugerir entidades, desfazer dúvidas e auditar" />
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <TextBox Text="{Binding Settings.OllamaAddress}" Width="260" />
-                <Button Content="Testar e listar modelos" Command="{Binding TestOllamaCommand}" />
+                <Button Classes="action" Content="Testar e listar modelos" Command="{Binding TestOllamaCommand}" />
               </StackPanel>
               <TextBlock Text="Modelo de texto" />
               <ComboBox ItemsSource="{Binding OllamaModels}" SelectedItem="{Binding Settings.LlmTextModel}" Width="260" PlaceholderText="{Binding Settings.LlmTextModel}" />
               <TextBlock Text="Modelo de visão (opcional)" />
               <ComboBox ItemsSource="{Binding OllamaModels}" SelectedItem="{Binding Settings.LlmVisionModel}" Width="260" PlaceholderText="{Binding Settings.LlmVisionModel}" />
               <TextBlock Classes="muted" Text="Só endereços deste computador são aceitos (127.0.0.1, ::1, localhost). As sugestões do LLM começam desmarcadas na revisão." />
-              <Button Content="Salvar configurações" Command="{Binding SaveSettingsCommand}" Classes="accent" />
+              <Button Content="Salvar configurações" Command="{Binding SaveSettingsCommand}" Classes="primary" />
             </StackPanel>
           </Grid>
         </ScrollViewer>
@@ -342,11 +342,11 @@
     </TabControl>
 
     <!-- Status -->
-    <Border Grid.Row="2" Padding="10,6" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+    <Border Grid.Row="2" Padding="10,6" Classes="headerBar">
       <Grid ColumnDefinitions="*,200,Auto" ColumnSpacing="8">
         <TextBlock Text="{Binding Status}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
         <ProgressBar Grid.Column="1" IsIndeterminate="{Binding IsBusy}" Value="{Binding Progress}" IsVisible="{Binding IsBusy}" />
-        <Button Grid.Column="2" Content="Cancelar" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" />
+        <Button Classes="action" Grid.Column="2" Content="Cancelar" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" />
       </Grid>
     </Border>
   </Grid>

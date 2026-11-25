@@ -9,6 +9,7 @@ internal static class Program
 
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>()
         .UsePlatformDetect()
-        .WithInterFont()
+        // As in the DWSIM Avalonia UI, the platform UI font (Segoe UI on Windows) is used instead
+        // of the bundled Inter, because the system rasterises it with native hinting.
         .LogToTrace();
 }
