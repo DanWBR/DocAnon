@@ -27,6 +27,8 @@ public partial class MainWindow : Window
         CopyRestoredButton.Click += async (_, _) => await CopyText(_vm?.RestoredText);
         SavePackageButton.Click += OnSavePackage;
         AddLogoButton.Click += OnAddLogo;
+        ExportProfileButton.Click += OnExportProfile;
+        ImportProfileButton.Click += OnImportProfile;
         PageCombo.SelectionChanged += (_, _) => ShowPage();
         PageExport.IsCheckedChanged += (_, _) =>
         {
@@ -138,6 +140,42 @@ public partial class MainWindow : Window
             FileTypeFilter = [new FilePickerFileType("Imagens") { Patterns = ["*.png", "*.jpg", "*.jpeg", "*.bmp"] }],
         });
         if (picked.FirstOrDefault()?.TryGetLocalPath() is { } p) _vm?.AddLogoFromFile(p);
+    }
+
+    private async void OnExportProfile(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is null) return;
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Exportar o perfil da empresa",
+            SuggestedFileName = (string.IsNullOrWhiteSpace(_vm.ProfileName) ? "perfil" : _vm.ProfileName) + ".docprofile",
+            DefaultExtension = "docprofile",
+            FileTypeChoices = [new FilePickerFileType("Perfil do DocAnon") { Patterns = ["*.docprofile"] }],
+        });
+        if (file?.TryGetLocalPath() is not { } path) return;
+        var password = await new PasswordDialog("Senha da cópia",
+            "A cópia exportada é cifrada com esta senha e abre em qualquer computador. Sem a senha, ela não abre, então guarde-a num lugar seguro, separado do arquivo.",
+            confirm: true, minLength: DocAnon.Core.Vault.ProfileStore.MinExportPasswordLength).ShowDialog<string?>(this);
+        if (password is null) return;
+        _vm.ExportProfile(path, password);
+    }
+
+    private async void OnImportProfile(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is null) return;
+        var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Importar um perfil da empresa",
+            FileTypeFilter = [new FilePickerFileType("Perfis") { Patterns = ["*.docprofile", "*.json"] }],
+        });
+        if (picked.FirstOrDefault()?.TryGetLocalPath() is not { } path) return;
+        string? password = null;
+        if (MainViewModel.FileNeedsPassword(path))
+        {
+            password = await new PasswordDialog("Senha do perfil", "Digite a senha usada quando este perfil foi exportado.", confirm: false).ShowDialog<string?>(this);
+            if (password is null) return;
+        }
+        _vm.ImportProfile(path, password);
     }
 
     private async Task CopyText(string? text)

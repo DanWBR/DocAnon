@@ -147,4 +147,60 @@ public sealed class ProfileStore : EncryptedStore
             CryptographicOperations.ZeroMemory(plain);
         }
     }
+
+    /// <summary>Shortest password accepted for an exported profile.</summary>
+    public const int MinExportPasswordLength = 8;
+
+    /// <summary>
+    /// Writes a copy of the profile to any path, encrypted with a password. A profile in the store
+    /// is usually protected by the Windows user, which opens only on this computer; the exported
+    /// copy opens anywhere with the password, so it serves as a backup or to share with a colleague.
+    /// </summary>
+    public static void Export(CompanyProfile p, string path, string password)
+    {
+        if (password.Length < MinExportPasswordLength)
+            throw new ArgumentException($"A senha precisa ter pelo menos {MinExportPasswordLength} caracteres.", nameof(password));
+        byte[] plain = JsonSerializer.SerializeToUtf8Bytes(p, Json);
+        byte[] data = VaultCrypto.Encrypt(plain, new VaultKey.Password(password));
+        CryptographicOperations.ZeroMemory(plain);
+        File.WriteAllBytes(path, data);
+    }
+
+    /// <summary>
+    /// Reads a profile from a file outside the store: an exported copy (password), a store file of this
+    /// Windows user, or a plain JSON profile. Returns null when the file needs a password that was not given.
+    /// </summary>
+    public static CompanyProfile? ReadFile(string path, string? password)
+    {
+        byte[] data = File.ReadAllBytes(path);
+        if (data.Length > 0 && (data[0] == (byte)'{' || data[0] == 0xEF))
+            return JsonSerializer.Deserialize<CompanyProfile>(System.Text.Encoding.UTF8.GetString(data).TrimStart('﻿'), Json);
+        VaultKey key;
+        if (VaultCrypto.IsPasswordProtected(data))
+        {
+            if (string.IsNullOrEmpty(password)) return null;
+            key = new VaultKey.Password(password);
+        }
+        else key = new VaultKey.WindowsUser();
+        byte[] plain = VaultCrypto.Decrypt(data, key);
+        try
+        {
+            return JsonSerializer.Deserialize<CompanyProfile>(plain, Json);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(plain);
+        }
+    }
+
+    /// <summary>
+    /// Copies a profile into the store under the given key. A profile with the same name is replaced,
+    /// so importing a newer copy updates it.
+    /// </summary>
+    public string Import(CompanyProfile p, VaultKey key)
+    {
+        var existing = List().FirstOrDefault(i => i.Label.Equals(Slug(p.Name), StringComparison.OrdinalIgnoreCase));
+        if (existing is not null) p.Id = existing.Id;
+        return Save(p, key);
+    }
 }

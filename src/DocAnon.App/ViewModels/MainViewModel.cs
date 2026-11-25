@@ -314,6 +314,49 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// Reads "TIPO: expressão" lines. The labels of patterns that did not change are kept, and a
     /// line without a known type becomes PERSONALIZADO.
     /// </summary>
+    /// <summary>Saves the profile being edited and writes a password-protected copy of it.</summary>
+    public void ExportProfile(string path, string password)
+    {
+        SaveProfile();
+        if (Profile is null) return;
+        ProfileStore.Export(Profile, path, password);
+        Status = $"Perfil \"{Profile.Name}\" exportado para {path}. Guarde a senha: sem ela, a cópia não abre.";
+    }
+
+    /// <summary>
+    /// Reads a profile file and copies it into the store. Returns false when the file is protected by a
+    /// password that was not given yet.
+    /// </summary>
+    public bool ImportProfile(string path, string? password)
+    {
+        CompanyProfile? p;
+        try
+        {
+            p = ProfileStore.ReadFile(path, password);
+        }
+        catch (CryptographicException)
+        {
+            Status = "Não foi possível abrir o perfil: senha errada ou arquivo de outro usuário do Windows.";
+            return true;
+        }
+        if (p is null) return false;
+        _profiles.Import(p, Key());
+        Profile = p;
+        Settings.LastProfileId = p.Id;
+        Settings.Save(_root);
+        RefreshStoredLists();
+        FillProfileEditor();
+        Status = $"Perfil \"{p.Name}\" importado: {p.Terms.Count} termos, {p.Patterns.Count} padrões, {p.Logos.Count} logotipos.";
+        return true;
+    }
+
+    public static bool FileNeedsPassword(string path)
+    {
+        var head = new byte[9];
+        using var fs = File.OpenRead(path);
+        return fs.Read(head, 0, head.Length) == head.Length && VaultCrypto.IsPasswordProtected(head);
+    }
+
     private static List<ProfilePattern> ParsePatterns(string text, List<ProfilePattern> previous)
     {
         var result = new List<ProfilePattern>();

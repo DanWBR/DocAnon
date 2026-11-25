@@ -81,6 +81,28 @@ Uma região fixa é um retângulo em frações da página, de 0 a 1, medido a pa
 
 A opção **Cobrir imagens pequenas nos desenhos** cobre, nas páginas de desenho, todas as imagens embutidas que ocupam menos de 15% da folha. Ela fica ligada por padrão, porque essas imagens costumam ser logotipos, carimbos e assinaturas.
 
+## Cópia de segurança
+
+O perfil gravado pelo aplicativo fica em `%LOCALAPPDATA%\DocAnon\profiles`. Se os cofres usam a proteção do usuário do Windows, esse arquivo só abre com o seu usuário naquele computador, e ele se perde se você trocar de computador ou reinstalar o Windows. Por isso, guarde uma cópia exportada:
+
+1. Em **Configurações**, carregue o perfil e clique em **Exportar perfil...**.
+2. Escolha onde gravar a cópia, por exemplo um pendrive, uma pasta de backup ou um cofre de senhas que aceite anexos.
+3. Escolha uma senha de pelo menos 8 caracteres e digite-a duas vezes.
+
+A cópia é cifrada com AES-256-GCM e com uma chave derivada da senha, e ela abre em qualquer computador que tenha o DocAnon. Sem a senha, a cópia não abre, por isso guarde a senha num lugar separado do arquivo.
+
+Para usar a cópia, clique em **Importar perfil...**, escolha o arquivo e digite a senha. O DocAnon grava o perfil na pasta de perfis com a proteção configurada no computador. Se já houver um perfil com o mesmo nome, ele é substituído. O mesmo botão também importa perfis em JSON.
+
+Na linha de comando, os comandos equivalentes são:
+
+```powershell
+docanon export-profile "Cliente X" --destino E:\backup\cliente-x.docprofile --senha-arquivo <senha>
+```
+
+```powershell
+docanon import-profile E:\backup\cliente-x.docprofile --senha-arquivo <senha>
+```
+
 ## Perfil em JSON
 
 A linha de comando aceita um perfil cifrado do aplicativo (`.docprofile`) ou um perfil em JSON. O arquivo JSON fica em texto puro, por isso guarde-o num lugar protegido.

@@ -24,7 +24,8 @@ Se você instalou o DocAnon com a opção de PATH, chame `docanon` de qualquer t
 | `reidentify` | restaura os valores reais na resposta da IA |
 | `sessions` | lista as sessões salvas |
 | `profiles` | lista os perfis de empresa salvos |
-| `import-profile` | grava um perfil em JSON como perfil cifrado, que o aplicativo passa a listar |
+| `import-profile` | grava um perfil em JSON ou uma cópia exportada como perfil cifrado, que o aplicativo passa a listar |
+| `export-profile` | grava uma cópia do perfil cifrada com senha, que abre em qualquer computador |
 | `inspect` | mostra as entidades e os fatores de uma sessão |
 | `render` | desenha uma página de PDF em PNG, por exemplo para recortar o logotipo |
 
@@ -47,6 +48,8 @@ Se você instalou o DocAnon com a opção de PATH, chame `docanon` de qualquer t
 | `--arquivo-saida <arquivo>` | reidentify | grava o texto restaurado nesse arquivo |
 | `--raiz <pasta>` | todos que usam cofres | pasta dos cofres, no lugar de `%LOCALAPPDATA%\DocAnon` |
 | `--pagina <n>` e `--png <arquivo>` | render | página a desenhar e arquivo de saída |
+| `--destino <arquivo>` | export-profile | arquivo da cópia exportada |
+| `--senha-arquivo <senha>` | export-profile, import-profile | senha da cópia exportada; também pode vir de `DOCANON_SENHA_PERFIL` |
 
 A senha também pode vir da variável de ambiente `DOCANON_SENHA`, o que evita deixá-la no histórico do terminal.
 
@@ -95,5 +98,6 @@ docanon inspect --sessao estudo-tocha
 | 0 | tudo certo |
 | 2 | `anonymize` terminou, mas a checagem de vazamento encontrou valores reais na saída |
 | 3 | `reidentify` terminou, mas a resposta tinha marcadores que não existem na sessão |
+| 1 | o comando não pôde ser executado, por exemplo por senha errada ou arquivo inexistente; a mensagem de erro diz o motivo |
 
 Em scripts, trate o código 2 como um sinal para revisar a saída antes de enviá-la.

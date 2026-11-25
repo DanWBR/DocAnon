@@ -171,12 +171,15 @@ profiles.SetAction(r =>
 });
 
 // docanon import-profile
-var profileJsonArg = new Argument<string>("perfil") { Description = "Perfil em JSON (texto puro)." };
-var importProfile = new Command("import-profile", "Grava um perfil em JSON como perfil cifrado, que o aplicativo passa a listar. Os logotipos indicados por caminho são embutidos no perfil.") { profileJsonArg, passwordOpt, rootOpt };
+var profileFileArg = new Argument<string>("perfil") { Description = "Perfil em JSON (texto puro) ou perfil exportado (.docprofile)." };
+var filePasswordOpt = new Option<string?>("--senha-arquivo") { Description = "Senha do perfil exportado. Também lida de DOCANON_SENHA_PERFIL." };
+var importProfile = new Command("import-profile", "Grava um perfil em JSON ou um perfil exportado como perfil cifrado, que o aplicativo passa a listar. Os logotipos indicados por caminho são embutidos no perfil.") { profileFileArg, filePasswordOpt, passwordOpt, rootOpt };
 importProfile.SetAction(r =>
 {
-    string path = Path.GetFullPath(r.GetValue(profileJsonArg)!);
-    var profile = JsonSerializer.Deserialize<CompanyProfile>(File.ReadAllText(path), json) ?? throw new InvalidDataException("Perfil vazio.");
+    string path = Path.GetFullPath(r.GetValue(profileFileArg)!);
+    string? filePassword = r.GetValue(filePasswordOpt) ?? Environment.GetEnvironmentVariable("DOCANON_SENHA_PERFIL");
+    var profile = ProfileStore.ReadFile(path, filePassword)
+        ?? throw new InvalidOperationException("Este perfil foi exportado com senha. Informe --senha-arquivo.");
     string folder = Path.GetDirectoryName(path)!;
     foreach (var logo in profile.Logos.Where(l => !string.IsNullOrEmpty(l.Path)))
     {
@@ -184,12 +187,28 @@ importProfile.SetAction(r =>
         logo.PngBase64 = Convert.ToBase64String(File.ReadAllBytes(logoPath));
         logo.Path = null;
     }
+    string saved = new ProfileStore(r.GetValue(rootOpt)).Import(profile, Key(r));
+    Console.WriteLine($"Perfil \"{profile.Name}\" salvo em {saved}: {profile.Terms.Count} termos, {profile.Patterns.Count} padrões, {profile.Exceptions.Count} exceções, {profile.Logos.Count} logotipos, {profile.FixedRegions.Count} regiões.");
+    return 0;
+});
+
+// docanon export-profile
+var profileNameArg = new Argument<string>("perfil") { Description = "Nome do perfil salvo (como aparece em profiles) ou caminho do arquivo .docprofile." };
+var exportPathOpt = new Option<string>("--destino") { Description = "Arquivo de destino, por exemplo um pendrive ou uma pasta de backup.", Required = true };
+var exportProfile = new Command("export-profile", "Grava uma cópia do perfil cifrada com senha, que abre em qualquer computador. Serve para backup.") { profileNameArg, exportPathOpt, filePasswordOpt, passwordOpt, rootOpt };
+exportProfile.SetAction(r =>
+{
     var store = new ProfileStore(r.GetValue(rootOpt));
-    // A profile with the same name is replaced, so importing again updates it.
-    var existing = store.List().FirstOrDefault(i => i.Label.Equals(EncryptedStore.Slug(profile.Name), StringComparison.OrdinalIgnoreCase));
-    if (existing is not null) profile.Id = existing.Id;
-    string saved = store.Save(profile, Key(r));
-    Console.WriteLine($"Perfil \"{profile.Name}\" salvo em {saved}: {profile.Terms.Count} termos, {profile.Exceptions.Count} exceções, {profile.Logos.Count} logotipos, {profile.FixedRegions.Count} regiões.");
+    string name = r.GetValue(profileNameArg)!;
+    string source = File.Exists(name) ? name
+        : store.List().FirstOrDefault(i => i.Label.Equals(EncryptedStore.Slug(name), StringComparison.OrdinalIgnoreCase))?.Path
+          ?? throw new FileNotFoundException($"Perfil \"{name}\" não encontrado.");
+    var profile = store.Load(source, Key(r));
+    string? filePassword = r.GetValue(filePasswordOpt) ?? Environment.GetEnvironmentVariable("DOCANON_SENHA_PERFIL");
+    if (string.IsNullOrEmpty(filePassword)) throw new InvalidOperationException("Informe a senha da cópia com --senha-arquivo.");
+    string dest = Path.GetFullPath(r.GetValue(exportPathOpt)!);
+    ProfileStore.Export(profile, dest, filePassword);
+    Console.WriteLine($"Perfil \"{profile.Name}\" exportado para {dest}. Guarde a senha: sem ela, a cópia não abre.");
     return 0;
 });
 
@@ -247,5 +266,16 @@ inspect.SetAction(r =>
     return 0;
 });
 
-var root = new RootCommand("DocAnon: anonimiza documentos localmente antes de enviá-los a modelos de IA na nuvem.") { extract, detect, anonymize, reidentify, sessions, profiles, importProfile, inspect, render, words };
-return await root.Parse(args).InvokeAsync();
+var root = new RootCommand("DocAnon: anonimiza documentos localmente antes de enviá-los a modelos de IA na nuvem.") { extract, detect, anonymize, reidentify, sessions, profiles, importProfile, exportProfile, inspect, render, words };
+// Expected failures (wrong password, missing file, invalid profile) print one line instead of a stack trace.
+var config = new InvocationConfiguration { EnableDefaultExceptionHandler = false };
+try
+{
+    return await root.Parse(args).InvokeAsync(config);
+}
+catch (Exception ex) when (ex is InvalidOperationException or FileNotFoundException or InvalidDataException or IOException
+                               or UnauthorizedAccessException or ArgumentException or System.Security.Cryptography.CryptographicException or JsonException)
+{
+    Console.Error.WriteLine("erro: " + (ex is System.Security.Cryptography.CryptographicException ? "senha errada ou cofre de outro usuário." : ex.Message));
+    return 1;
+}

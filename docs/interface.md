@@ -116,7 +116,7 @@ A reidentificação usa a sessão aberta. Por isso, abra a mesma sessão em que 
 
 ### Perfil da empresa
 
-O lado esquerdo edita o perfil carregado: nome, termos, exceções, padrões de prefixo de unidade, opções de tags e de imagens pequenas, logotipos e regiões fixas. O botão **Salvar perfil** grava tudo no cofre. A página [Perfis de empresa](perfis.md) explica cada campo.
+O lado esquerdo edita o perfil carregado: nome, termos, padrões, exceções, padrões de prefixo de unidade, opções de tags e de imagens pequenas, logotipos e regiões fixas. O botão **Salvar perfil** grava tudo no cofre. O botão **Exportar perfil...** grava uma cópia cifrada com senha, para backup, e **Importar perfil...** lê uma cópia exportada ou um perfil em JSON. A página [Perfis de empresa](perfis.md) explica cada campo.
 
 ### Detecção
 

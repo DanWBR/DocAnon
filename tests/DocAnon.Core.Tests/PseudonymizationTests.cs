@@ -220,6 +220,46 @@ public class VaultTests
     }
 
     [Fact]
+    public void ProfileExportAndImport()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "docanon-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(root);
+            var p = new CompanyProfile
+            {
+                Name = "Cliente Z",
+                Terms = [new ProfileTerm { Text = "Refinaria Exemplo", Type = EntityType.PLANTA }],
+                Patterns = [new ProfilePattern { Pattern = @"\bZ-\d{3}\b", Type = EntityType.UNIDADE }],
+            };
+            string file = Path.Combine(root, "backup.docprofile");
+            Assert.Throws<ArgumentException>(() => ProfileStore.Export(p, file, "curta"));
+            ProfileStore.Export(p, file, "senha-longa-1");
+            Assert.DoesNotContain("Refinaria", File.ReadAllText(file));
+
+            Assert.Null(ProfileStore.ReadFile(file, null));
+            Assert.ThrowsAny<CryptographicException>(() => ProfileStore.ReadFile(file, "senha-errada"));
+            var back = ProfileStore.ReadFile(file, "senha-longa-1")!;
+            Assert.Equal("Refinaria Exemplo", back.Terms[0].Text);
+            Assert.Equal(EntityType.UNIDADE, back.Patterns[0].Type);
+
+            // Importing twice keeps one profile, because the second import replaces the first.
+            var store = new ProfileStore(root);
+            store.Import(back, new VaultKey.Password("pw"));
+            store.Import(ProfileStore.ReadFile(file, "senha-longa-1")!, new VaultKey.Password("pw"));
+            Assert.Single(store.List());
+
+            string json = Path.Combine(root, "perfil.json");
+            File.WriteAllText(json, """{ "Name": "JSON", "Terms": [ { "Text": "X", "Type": "EMPRESA" } ] }""");
+            Assert.Equal("JSON", ProfileStore.ReadFile(json, null)!.Name);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
     public void ProfileStoreRoundTrip()
     {
         string root = Path.Combine(Path.GetTempPath(), "docanon-test-" + Guid.NewGuid().ToString("N"));

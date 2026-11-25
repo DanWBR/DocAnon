@@ -250,6 +250,10 @@
                 <Button Classes="action" Content="Novo perfil" Command="{Binding NewProfileCommand}" />
                 <Button Content="Salvar perfil" Command="{Binding SaveProfileCommand}" Classes="primary" />
               </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Classes="action" x:Name="ExportProfileButton" Content="Exportar perfil..." ToolTip.Tip="Grava uma cópia cifrada com senha, que abre em qualquer computador. Use para backup." />
+                <Button Classes="action" x:Name="ImportProfileButton" Content="Importar perfil..." ToolTip.Tip="Lê um perfil exportado (.docprofile) ou um perfil em JSON." />
+              </StackPanel>
               <TextBlock Text="Termos (variantes separadas por ;)" FontWeight="SemiBold" />
               <ItemsControl ItemsSource="{Binding ProfileTerms}">
                 <ItemsControl.ItemTemplate>
