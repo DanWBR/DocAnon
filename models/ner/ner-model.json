@@ -1,0 +1,26 @@
+{
+  "modelFile": "model.onnx",
+  "vocabFile": "vocab.txt",
+  "labels": [
+    "O",
+    "B-DATE",
+    "I-DATE",
+    "B-PER",
+    "I-PER",
+    "B-ORG",
+    "I-ORG",
+    "B-LOC",
+    "I-LOC"
+  ],
+  "lowerCase": false,
+  "maxSequenceLength": 512,
+  "usesTokenTypeIds": true,
+  "labelMap": {
+    "PER": "PESSOA",
+    "ORG": "EMPRESA",
+    "LOC": "LOCAL"
+  },
+  "source": "Davlan/bert-base-multilingual-cased-ner-hrl",
+  "license": "afl-3.0",
+  "quantized": true
+}

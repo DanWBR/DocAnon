@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+/models/ner/source/
+/models/ner/*.onnx
+/models/tessdata/*.traineddata
+/artifacts/
+/publish/
+__pycache__/
+*.docanon
+TestResults/

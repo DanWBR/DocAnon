@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- PDFtoImage marks its API for desktop and mobile platforms only, which are the only targets of DocAnon. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DocAnon.Core\DocAnon.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Tesseract" />
+    <PackageReference Include="PDFtoImage" />
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+</Project>

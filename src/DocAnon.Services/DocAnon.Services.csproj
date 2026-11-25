@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\DocAnon.Core\DocAnon.Core.csproj" />
+    <ProjectReference Include="..\DocAnon.Extraction\DocAnon.Extraction.csproj" />
+    <ProjectReference Include="..\DocAnon.Ocr\DocAnon.Ocr.csproj" />
+    <ProjectReference Include="..\DocAnon.Ner\DocAnon.Ner.csproj" />
+    <ProjectReference Include="..\DocAnon.Llm\DocAnon.Llm.csproj" />
+    <ProjectReference Include="..\DocAnon.Redaction\DocAnon.Redaction.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\DocAnon.Core\DocAnon.Core.csproj" />
+    <ProjectReference Include="..\DocAnon.Ocr\DocAnon.Ocr.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="PdfPig" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
+    <PackageReference Include="netDxf" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Svg.Skia" />
+  </ItemGroup>
+</Project>

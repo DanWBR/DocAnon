@@ -1,0 +1,32 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Avalonia 12 uses SkiaSharp 3.119, so every Skia-based package is pinned to the 3.x line. -->
+    <PackageVersion Include="Avalonia" Version="12.2.0" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.2.0" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.2.0" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.2.0" />
+    <PackageVersion Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.macOS" Version="3.119.4" />
+    <PackageVersion Include="PDFtoImage" Version="5.2.1" />
+    <PackageVersion Include="Svg.Skia" Version="5.1.1" />
+    <PackageVersion Include="PdfPig" Version="0.1.16" />
+    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.5.1" />
+    <PackageVersion Include="netDxf" Version="2023.11.10" />
+    <PackageVersion Include="Tesseract" Version="5.2.0" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.32.0" />
+    <PackageVersion Include="Microsoft.ML.Tokenizers" Version="3.0.0" />
+    <PackageVersion Include="System.CommandLine" Version="3.0.0" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DocAnon.App/DocAnon.App.csproj" />
+    <Project Path="src/DocAnon.Cli/DocAnon.Cli.csproj" />
+    <Project Path="src/DocAnon.Core/DocAnon.Core.csproj" />
+    <Project Path="src/DocAnon.Extraction/DocAnon.Extraction.csproj" />
+    <Project Path="src/DocAnon.Llm/DocAnon.Llm.csproj" />
+    <Project Path="src/DocAnon.Ner/DocAnon.Ner.csproj" />
+    <Project Path="src/DocAnon.Ocr/DocAnon.Ocr.csproj" />
+    <Project Path="src/DocAnon.Redaction/DocAnon.Redaction.csproj" />
+    <Project Path="src/DocAnon.Services/DocAnon.Services.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DocAnon.Core.Tests/DocAnon.Core.Tests.csproj" />
+    <Project Path="tests/DocAnon.Integration.Tests/DocAnon.Integration.Tests.csproj" />
+  </Folder>
+</Solution>

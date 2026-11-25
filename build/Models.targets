@@ -1,0 +1,17 @@
+<Project>
+  <!-- Copies the NER model and the Tesseract data next to the executable, when they exist. -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\models\ner\*.onnx;$(MSBuildThisFileDirectory)..\models\ner\*.json;$(MSBuildThisFileDirectory)..\models\ner\vocab.txt"
+          Link="models\ner\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)..\models\tessdata\*.traineddata"
+          Link="models\tessdata\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <!-- Native packages ship debug symbols and import libraries that the app does not need at run time. -->
+  <Target Name="TrimPublishedNativeExtras" AfterTargets="Publish">
+    <ItemGroup>
+      <_DocAnonExtras Include="$(PublishDir)*.pdb;$(PublishDir)*.lib" />
+    </ItemGroup>
+    <Delete Files="@(_DocAnonExtras)" />
+  </Target>
+</Project>

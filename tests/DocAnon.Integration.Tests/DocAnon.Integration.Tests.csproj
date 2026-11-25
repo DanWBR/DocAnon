@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
+    <PackageReference Include="netDxf" />
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DocAnon.Core\DocAnon.Core.csproj" />
+    <ProjectReference Include="..\..\src\DocAnon.Extraction\DocAnon.Extraction.csproj" />
+    <ProjectReference Include="..\..\src\DocAnon.Ocr\DocAnon.Ocr.csproj" />
+    <ProjectReference Include="..\..\src\DocAnon.Ner\DocAnon.Ner.csproj" />
+    <ProjectReference Include="..\..\src\DocAnon.Redaction\DocAnon.Redaction.csproj" />
+    <ProjectReference Include="..\..\src\DocAnon.Services\DocAnon.Services.csproj" />
+  </ItemGroup>
+  <Import Project="..\..\build\Models.targets" />
+</Project>
