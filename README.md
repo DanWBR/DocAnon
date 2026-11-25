@@ -4,6 +4,8 @@ DocAnon anonimiza documentos no seu computador antes que você os envie a um mod
 
 Tudo roda localmente. O único acesso de rede possível é ao Ollama neste computador (127.0.0.1), e só quando você o liga nas configurações.
 
+A documentação completa está na pasta [`docs/`](docs/index.md): [primeiros passos](docs/primeiros-passos.md), [guia da interface](docs/interface.md), [o que é detectado](docs/deteccao.md), [escala dos números](docs/numeros.md), [desenhos e imagens](docs/imagens.md), [perfis de empresa](docs/perfis.md), [sessões e cofre](docs/sessoes.md), [LLM local](docs/llm-local.md), [formatos](docs/formatos.md), [linha de comando](docs/linha-de-comando.md) e [segurança e limitações](docs/seguranca.md).
+
 > **Importante:** a detecção automática não é perfeita. Revise sempre a lista de trechos e as imagens antes de copiar o resultado. A checagem de vazamento ajuda, mas não substitui a sua revisão.
 
 ## Formatos

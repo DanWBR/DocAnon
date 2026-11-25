@@ -1,0 +1,92 @@
+---
+layout: default
+title: Perfis de empresa
+nav_order: 8
+---
+
+# Perfis de empresa
+{: .no_toc }
+
+1. TOC
+{:toc}
+
+O perfil de empresa é um glossário dos nomes sigilosos de um cliente. Ele vale para todas as sessões, e por isso você o monta uma vez e o reaproveita em todos os documentos daquele cliente. Como a própria lista é sigilosa, o perfil é salvo cifrado, com a mesma proteção dos cofres de sessão.
+
+## Termos
+
+Cada termo tem um texto, um tipo e, se houver, variantes. Os tipos mais usados são Empresa, Cliente, Fornecedor, Planta, Unidade, Local, Projeto, Contrato, Produto e Catalisador.
+
+| Termo | Tipo | Variantes |
+|---|---|---|
+| Petroquímica Horizonte | Empresa | PQH; Horizonte Petroquímica |
+| Refinaria Atlântica | Cliente | REFAT |
+| Pólo Itaguaçu | Planta | Polo Itaguaçu |
+| Projeto Boreal | Projeto | |
+| KT-955 Ultra | Catalisador | KT-955 |
+
+Os termos e as variantes são encontrados sem diferença entre maiúsculas e minúsculas e sem diferença de acentos, e sempre recebem um marcador. Quando dois termos se sobrepõem, o mais longo vence, de modo que "Refinaria Atlântica Sul" não é cortado em "Refinaria Atlântica".
+
+Um termo também pode ser adicionado durante a revisão: selecione o trecho no texto, clique com o botão direito e escolha **Adicionar ao perfil da empresa como**.
+
+## Exceções
+
+As exceções são termos que nunca devem ser anonimizados, qualquer que seja o detector. Elas servem para os falsos positivos que aparecem sempre nos documentos do cliente, como o nome de um componente químico, de uma norma interna ou de um programa. Escreva uma exceção por linha, ou use **Nunca anonimizar este termo** na revisão.
+
+## Tags
+
+**Padrões de prefixo de unidade:** por padrão, o DocAnon trata como código de unidade qualquer prefixo numérico antes de uma tag, como o `2100` de `2100-P-101`. Se o cliente usar outro padrão, escreva expressões regulares, uma por linha, que descrevam os prefixos que contam como unidade. Quando a lista estiver preenchida, só os prefixos que combinarem com ela serão anonimizados.
+
+**Anonimizar todas as tags:** se o cliente considerar sigilosa a própria numeração dos equipamentos, marque esta opção. Todas as tags passam a receber marcadores, como `[TAG_EQUIP_1]` e `[TAG_INSTR_3]`.
+
+## Logotipos
+
+O DocAnon procura cada logotipo do perfil em todas as páginas exportadas como imagem, em vários tamanhos, e cobre as ocorrências. Para preparar o recorte:
+
+1. Gere a imagem de uma página que tenha o logotipo. Na linha de comando, use:
+
+   ```powershell
+   docanon render desenho.pdf --pagina 1 --png pagina1.png
+   ```
+
+2. Abra `pagina1.png` num editor de imagens e recorte só o logotipo. Deixe pouca margem branca em volta dele.
+3. Em **Configurações**, clique em **Adicionar logotipo (PNG recortado)** e escolha o recorte.
+4. Clique em **Salvar perfil**.
+
+O recorte fica guardado dentro do perfil cifrado. A busca tolera mudanças de tamanho, brilho e contraste, mas não tolera rotação. Se o logotipo aparecer girado em alguns desenhos, adicione também um recorte girado.
+
+## Regiões fixas
+
+Uma região fixa é um retângulo em frações da página, de 0 a 1, medido a partir do canto superior esquerdo. Ele é coberto em todas as páginas exportadas como imagem que tenham a orientação indicada. A região é útil para o carimbo de um padrão de folha, quando o OCR não consegue ler parte dele.
+
+| Campo | Exemplo | Significado |
+|---|---|---|
+| rótulo | carimbo | nome para você reconhecer a região |
+| X, Y | 0,82 e 0,80 | canto superior esquerdo, em frações da largura e da altura |
+| largura, altura | 0,18 e 0,20 | tamanho, em frações da largura e da altura |
+| orientação | paisagem | a região só vale para folhas nessa orientação |
+
+## Imagens pequenas
+
+A opção **Cobrir imagens pequenas nos desenhos** cobre, nas páginas de desenho, todas as imagens embutidas que ocupam menos de 15% da folha. Ela fica ligada por padrão, porque essas imagens costumam ser logotipos, carimbos e assinaturas.
+
+## Perfil em JSON para a linha de comando
+
+A linha de comando aceita um perfil cifrado do aplicativo (`.docprofile`) ou um perfil em JSON. O arquivo JSON fica em texto puro, por isso guarde-o num lugar protegido.
+
+```json
+{
+  "Name": "Cliente X",
+  "Terms": [
+    { "Text": "Refinaria Atlântica", "Type": "CLIENTE", "Aliases": ["REFAT"] },
+    { "Text": "Projeto Boreal", "Type": "PROJETO" }
+  ],
+  "Exceptions": [ "metano" ],
+  "UnitPrefixPatterns": [ "\\d{4}" ],
+  "AnonymizeAllTags": false,
+  "CoverSmallImages": true,
+  "Logos": [ { "Name": "logo", "Path": "logo.png" } ],
+  "FixedRegions": [
+    { "Label": "carimbo", "X": 0.82, "Y": 0.80, "Width": 0.18, "Height": 0.20, "Orientation": "Landscape" }
+  ]
+}
+```

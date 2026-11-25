@@ -1,0 +1,55 @@
+# Jekyll configuration for the DocAnon documentation site.
+#
+# Theme: Just the Docs (remote theme, so GitHub Pages builds the site on the server).
+# Source: /docs (Settings → Pages → "Deploy from a branch" → Branch: master, Folder: /docs).
+# GitHub Pages only publishes private repositories on paid plans; the pages also read
+# well directly on GitHub.
+
+title: DocAnon
+description: >-
+  Anonimização local de documentos pessoais e industriais antes do envio a modelos
+  de IA na nuvem, com marcadores reversíveis, escala secreta dos números e tarjas
+  nos desenhos.
+
+url: "https://danwbr.github.io"
+baseurl: "/DocAnon"
+
+remote_theme: just-the-docs/just-the-docs
+
+color_scheme: light
+search_enabled: true
+search:
+  heading_level: 3
+  previews: 3
+  preview_words_before: 5
+  preview_words_after: 10
+  tokenizer_separator: /[\s\-/]+/
+  rel_url: true
+  button: false
+
+heading_anchors: true
+back_to_top: true
+back_to_top_text: "Voltar ao topo"
+
+aux_links:
+  "GitHub":
+    - "https://github.com/DanWBR/DocAnon"
+aux_links_new_tab: true
+
+footer_content: >-
+  Copyright &copy; 2026 Daniel Wagner Oliveira de Medeiros.
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor/
+  - node_modules/
