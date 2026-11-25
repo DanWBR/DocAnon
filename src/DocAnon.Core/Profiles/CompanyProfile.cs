@@ -10,6 +10,19 @@ public sealed class ProfileTerm
     public List<string> Aliases { get; set; } = [];
 }
 
+/// <summary>
+/// A regular expression for values that follow a format instead of a fixed list, such as contract
+/// numbers or the area code inside document numbers. The whole match becomes a span of the type.
+/// </summary>
+public sealed class ProfilePattern
+{
+    public string Pattern { get; set; } = "";
+    public EntityType Type { get; set; } = EntityType.PERSONALIZADO;
+
+    /// <summary>Short description shown in the review list.</summary>
+    public string? Label { get; set; }
+}
+
 /// <summary>An image of the company logo, searched on every visual page.</summary>
 public sealed class LogoTemplate
 {
@@ -51,6 +64,9 @@ public sealed class CompanyProfile
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Name { get; set; } = "Sem perfil";
     public List<ProfileTerm> Terms { get; set; } = [];
+
+    /// <summary>Regular expressions for formatted values, such as contract and document numbers.</summary>
+    public List<ProfilePattern> Patterns { get; set; } = [];
 
     /// <summary>Terms that must never be anonymized, such as compound names or standards (API 650).</summary>
     public List<string> Exceptions { get; set; } = [];

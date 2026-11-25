@@ -90,6 +90,18 @@ public class EndToEndTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public void ExportedFileNamesAreAnonymized()
+    {
+        var session = Session.CreateNew("nomes");
+        string stem = Engine.SafeFileStem($"Relatório {FixtureFactory.Client} {FixtureFactory.Unit}-P-101A: revisão", session, FixtureFactory.Profile());
+        Assert.DoesNotContain("Atlântica", stem);
+        Assert.DoesNotContain(FixtureFactory.Unit, stem);
+        Assert.Contains("[CLIENTE_1]", stem);
+        Assert.Contains("P-101A", stem);
+        Assert.DoesNotContain(':', stem);
+    }
+
+    [Fact]
     public async Task VisioCopyIsAnonymized()
     {
         // A minimal .vsdx built by hand: one page with one shape text.

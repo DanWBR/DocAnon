@@ -90,7 +90,7 @@ O texto colado na aba **Documentos** é tratado como um documento de texto simpl
 
 ## Arquivos exportados
 
-Quando você clica em **Salvar pacote**, o DocAnon grava na pasta escolhida:
+Quando você clica em **Salvar pacote**, o DocAnon grava na pasta escolhida os arquivos abaixo. Como esses arquivos também podem ser anexados na IA, o nome de cada um passa pela mesma anonimização do texto, com os marcadores da sessão. Assim, se o perfil tiver padrões para os números de documento, um desenho chamado `DE-0001.02-2400-200-GNE-001.pdf` sai como `DE-[PROJETO_1].02-[UNIDADE_1]-200-GNE-001.anon.md`.
 
 | Arquivo | Conteúdo |
 |---|---|

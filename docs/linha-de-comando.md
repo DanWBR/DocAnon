@@ -23,6 +23,8 @@ Se você instalou o DocAnon com a opção de PATH, chame `docanon` de qualquer t
 | `anonymize` | anonimiza os documentos e grava o texto, as imagens tarjadas e a sessão cifrada |
 | `reidentify` | restaura os valores reais na resposta da IA |
 | `sessions` | lista as sessões salvas |
+| `profiles` | lista os perfis de empresa salvos |
+| `import-profile` | grava um perfil em JSON como perfil cifrado, que o aplicativo passa a listar |
 | `inspect` | mostra as entidades e os fatores de uma sessão |
 | `render` | desenha uma página de PDF em PNG, por exemplo para recortar o logotipo |
 
@@ -72,6 +74,12 @@ Restaurar a resposta da IA:
 
 ```powershell
 docanon reidentify --sessao estudo-tocha --entrada resposta.md --arquivo-saida resposta-real.md
+```
+
+Transformar um perfil em JSON num perfil cifrado do aplicativo:
+
+```powershell
+docanon import-profile cliente-x.json
 ```
 
 Ver o conteúdo de uma sessão:

@@ -195,6 +195,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string profileUnitPatterns = "";
 
+    /// <summary>One pattern per line, written as "TIPO: expressão regular".</summary>
+    [ObservableProperty]
+    private string profilePatterns = "";
+
     [ObservableProperty]
     private bool profileAnonymizeAllTags;
 
@@ -246,6 +250,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         ProfileName = Profile?.Name ?? "";
         ProfileExceptions = string.Join(Environment.NewLine, Profile?.Exceptions ?? []);
         ProfileUnitPatterns = string.Join(Environment.NewLine, Profile?.UnitPrefixPatterns ?? []);
+        ProfilePatterns = string.Join(Environment.NewLine, (Profile?.Patterns ?? []).Select(p => $"{p.Type}: {p.Pattern}"));
         ProfileAnonymizeAllTags = Profile?.AnonymizeAllTags ?? false;
         ProfileCoverSmallImages = Profile?.CoverSmallImages ?? true;
         if (Profile is null) return;
@@ -292,6 +297,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Profile.Terms = ProfileTerms.Where(t => !string.IsNullOrWhiteSpace(t.Text)).Select(t => t.ToTerm()).ToList();
         Profile.Exceptions = Lines(ProfileExceptions);
         Profile.UnitPrefixPatterns = Lines(ProfileUnitPatterns);
+        Profile.Patterns = ParsePatterns(ProfilePatterns, Profile.Patterns);
         Profile.AnonymizeAllTags = ProfileAnonymizeAllTags;
         Profile.CoverSmallImages = ProfileCoverSmallImages;
         Profile.Logos = ProfileLogos.ToList();
@@ -302,6 +308,29 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         RefreshStoredLists();
         OnPropertyChanged(nameof(ProfileTitle));
         Status = "Perfil salvo e cifrado.";
+    }
+
+    /// <summary>
+    /// Reads "TIPO: expressão" lines. The labels of patterns that did not change are kept, and a
+    /// line without a known type becomes PERSONALIZADO.
+    /// </summary>
+    private static List<ProfilePattern> ParsePatterns(string text, List<ProfilePattern> previous)
+    {
+        var result = new List<ProfilePattern>();
+        foreach (var line in Lines(text))
+        {
+            int colon = line.IndexOf(':');
+            var type = EntityType.PERSONALIZADO;
+            string pattern = line;
+            if (colon > 0 && Enum.TryParse<EntityType>(line[..colon].Trim(), true, out var t))
+            {
+                type = t;
+                pattern = line[(colon + 1)..].Trim();
+            }
+            string? label = previous.FirstOrDefault(p => p.Pattern == pattern)?.Label;
+            result.Add(new ProfilePattern { Pattern = pattern, Type = type, Label = label });
+        }
+        return result;
     }
 
     private static List<string> Lines(string s) => s.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
@@ -538,7 +567,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public async Task SavePackageAsync(string folder)
     {
         if (SelectedDocument?.Package is not { } pkg) return;
-        var written = await Engine.SaveAsync(pkg, SelectedDocument.Doc, folder);
+        var written = await Engine.SaveAsync(pkg, SelectedDocument.Doc, folder, Session, Profile);
+        SaveSession();
         Status = $"{written.Count} arquivos gravados em {folder}.";
     }
 

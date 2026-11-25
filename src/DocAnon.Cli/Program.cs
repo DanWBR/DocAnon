@@ -120,7 +120,7 @@ anonymize.SetAction(async (r, ct) =>
         var doc = await engine.ExtractAsync(f, ct);
         var spans = await engine.DetectAsync(doc, profile, ct: ct, session: session);
         var pkg = await engine.ExportAsync(doc, spans, session, profile, images: !r.GetValue(noImages), ct: ct);
-        var written = await Engine.SaveAsync(pkg, doc, r.GetValue(outOpt)!);
+        var written = await Engine.SaveAsync(pkg, doc, r.GetValue(outOpt)!, session, profile);
         Console.WriteLine($"== {doc.FileName}");
         Console.WriteLine($"  {pkg.Anonymized.Replacements.Count(x => x.Action == SpanAction.Pseudonymize)} marcadores, {pkg.Anonymized.Replacements.Count(x => x.Action == SpanAction.Scale)} números escalados, {pkg.Pages.Count} imagens");
         foreach (var w in doc.Warnings) Console.WriteLine("  aviso: " + w);
@@ -158,6 +158,38 @@ sessions.SetAction(r =>
 {
     foreach (var s in new SessionStore(r.GetValue(rootOpt)).List())
         Console.WriteLine($"{s.ModifiedUtc.ToLocalTime():yyyy-MM-dd HH:mm}  {s.Label,-30} {(s.PasswordProtected ? "senha" : "usuário Windows")}  {s.Path}");
+    return 0;
+});
+
+// docanon profiles
+var profiles = new Command("profiles", "Lista os perfis de empresa salvos.") { rootOpt };
+profiles.SetAction(r =>
+{
+    foreach (var p in new ProfileStore(r.GetValue(rootOpt)).List())
+        Console.WriteLine($"{p.ModifiedUtc.ToLocalTime():yyyy-MM-dd HH:mm}  {p.Label,-30} {(p.PasswordProtected ? "senha" : "usuário Windows")}  {p.Path}");
+    return 0;
+});
+
+// docanon import-profile
+var profileJsonArg = new Argument<string>("perfil") { Description = "Perfil em JSON (texto puro)." };
+var importProfile = new Command("import-profile", "Grava um perfil em JSON como perfil cifrado, que o aplicativo passa a listar. Os logotipos indicados por caminho são embutidos no perfil.") { profileJsonArg, passwordOpt, rootOpt };
+importProfile.SetAction(r =>
+{
+    string path = Path.GetFullPath(r.GetValue(profileJsonArg)!);
+    var profile = JsonSerializer.Deserialize<CompanyProfile>(File.ReadAllText(path), json) ?? throw new InvalidDataException("Perfil vazio.");
+    string folder = Path.GetDirectoryName(path)!;
+    foreach (var logo in profile.Logos.Where(l => !string.IsNullOrEmpty(l.Path)))
+    {
+        string logoPath = Path.IsPathRooted(logo.Path!) ? logo.Path! : Path.Combine(folder, logo.Path!);
+        logo.PngBase64 = Convert.ToBase64String(File.ReadAllBytes(logoPath));
+        logo.Path = null;
+    }
+    var store = new ProfileStore(r.GetValue(rootOpt));
+    // A profile with the same name is replaced, so importing again updates it.
+    var existing = store.List().FirstOrDefault(i => i.Label.Equals(EncryptedStore.Slug(profile.Name), StringComparison.OrdinalIgnoreCase));
+    if (existing is not null) profile.Id = existing.Id;
+    string saved = store.Save(profile, Key(r));
+    Console.WriteLine($"Perfil \"{profile.Name}\" salvo em {saved}: {profile.Terms.Count} termos, {profile.Exceptions.Count} exceções, {profile.Logos.Count} logotipos, {profile.FixedRegions.Count} regiões.");
     return 0;
 });
 
@@ -215,5 +247,5 @@ inspect.SetAction(r =>
     return 0;
 });
 
-var root = new RootCommand("DocAnon: anonimiza documentos localmente antes de enviá-los a modelos de IA na nuvem.") { extract, detect, anonymize, reidentify, sessions, inspect, render, words };
+var root = new RootCommand("DocAnon: anonimiza documentos localmente antes de enviá-los a modelos de IA na nuvem.") { extract, detect, anonymize, reidentify, sessions, profiles, importProfile, inspect, render, words };
 return await root.Parse(args).InvokeAsync();

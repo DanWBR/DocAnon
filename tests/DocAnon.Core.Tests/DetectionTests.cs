@@ -99,4 +99,21 @@ public class DetectionTests
         Assert.Contains(spans, s => s.Type == EntityType.PESSOA && s.Text == "Otavio B Moreira");
         Assert.DoesNotContain(spans, s => s.Text == "Paulo");
     }
+
+    [Fact]
+    public void ProfilePatternsMatchFormattedValues()
+    {
+        var profile = new CompanyProfile
+        {
+            Patterns =
+            [
+                new ProfilePattern { Pattern = @"\b\d{4}\.\d{7}\.\d{2}\.\d\b", Type = EntityType.CONTRATO },
+                new ProfilePattern { Pattern = @"(?<=\b[A-Z]{1,3}-\d{4}[.-]\d{2}-)\d{4}(?=-\d{3}-)", Type = EntityType.UNIDADE },
+                new ProfilePattern { Pattern = "([", Type = EntityType.PROJETO },
+            ],
+        };
+        var spans = Run("Contrato 1234.0012345.21.7, desenho DE-0001.02-2400-200-GNE-001 e MC-0001-02-2400-941-PUB-202.", profile);
+        Assert.Contains(spans, s => s.Type == EntityType.CONTRATO && s.Text == "1234.0012345.21.7");
+        Assert.Equal(2, spans.Count(s => s.Type == EntityType.UNIDADE && s.Text == "2400"));
+    }
 }

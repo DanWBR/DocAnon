@@ -242,11 +242,27 @@ public sealed class Engine : IDisposable
         }
     }
 
+    /// <summary>
+    /// The exported files go to the AI too, so their names must not carry what the text hides.
+    /// The original file name goes through the same detectors, with the session's markers, and
+    /// the characters that Windows does not accept in file names are replaced.
+    /// </summary>
+    public static string SafeFileStem(string original, Session? session, CompanyProfile? profile)
+    {
+        if (session is null) return original;
+        var pipeline = DetectionPipeline.CreateDefault().Add(new SessionTermsDetector(session.Registry));
+        var ctx = new DetectionContext(original, profile);
+        var spans = pipeline.Run(ctx);
+        string stem = Anonymizer.Apply(original, spans, session.Registry, session.Factors).Text;
+        foreach (char c in Path.GetInvalidFileNameChars()) stem = stem.Replace(c, '_');
+        return stem.Length > 120 ? stem[..120] : stem;
+    }
+
     /// <summary>Writes the package to a folder: Markdown, one PNG per page, an image-only PDF and the native copy.</summary>
-    public static async Task<List<string>> SaveAsync(ExportPackage pkg, ExtractedDocument doc, string folder)
+    public static async Task<List<string>> SaveAsync(ExportPackage pkg, ExtractedDocument doc, string folder, Session? session = null, CompanyProfile? profile = null)
     {
         Directory.CreateDirectory(folder);
-        string stem = Path.GetFileNameWithoutExtension(pkg.SourceName) + ".anon";
+        string stem = SafeFileStem(Path.GetFileNameWithoutExtension(pkg.SourceName), session, profile) + ".anon";
         var written = new List<string>();
         string md = Path.Combine(folder, stem + ".md");
         await File.WriteAllTextAsync(md, pkg.Anonymized.Text);
