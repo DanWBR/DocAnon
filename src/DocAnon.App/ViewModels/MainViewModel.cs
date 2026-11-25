@@ -378,12 +378,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         var engine = EnsureEngine();
         Status = $"Procurando dados sensíveis em {item.Name}...";
+        bool detecting = true;
+        // Progress reports are posted to the UI thread and may arrive after detection ends.
         var progress = new Progress<(string Stage, double Fraction)>(p =>
         {
+            if (!detecting) return;
             Progress = p.Fraction * 100;
             Status = $"{item.Name}: {(p.Stage == "ner" ? "reconhecimento de nomes" : p.Stage == "llm" ? "sugestões do LLM local" : p.Stage)} {p.Fraction:P0}";
         });
         var spans = await engine.DetectAsync(item.Doc, Profile, Settings.UseNer, Settings.UseLlm, progress, ct, Session);
+        detecting = false;
         if (!Settings.UseFirstNames) spans.RemoveAll(s => s.Detector == "nomes");
         if (engine.Llm is { HasTextModel: true } llm)
         {

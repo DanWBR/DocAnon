@@ -74,6 +74,18 @@ O perfil em JSON para a linha de comando tem este formato (o arquivo fica em tex
 }
 ```
 
+## Instalação
+
+Baixe `DocAnon-<versão>-win-x64-setup.exe` e rode. O instalador já leva o runtime do .NET, o modelo de NER e os dados do Tesseract, então o computador de destino não precisa de mais nada nem de acesso à internet. Por padrão, ele instala para todos os usuários em `Arquivos de Programas`. Se você escolher instalar só para você, ele não pede direitos de administrador. Uma opção do instalador coloca a linha de comando (`docanon`) no PATH.
+
+A desinstalação não apaga os cofres de sessão nem os perfis de empresa em `%LOCALAPPDATA%\DocAnon`. Apague essa pasta se quiser removê-los.
+
+Instalação silenciosa, só para o usuário atual:
+
+```powershell
+.\DocAnon-0.1.0-win-x64-setup.exe /VERYSILENT /CURRENTUSER /TASKS="clipath"
+```
+
 ## Compilação
 
 Requisitos: .NET 10 SDK e Python 3 com `onnxruntime`, este último só para preparar o modelo de NER.
@@ -93,14 +105,15 @@ Requisitos: .NET 10 SDK e Python 3 com `onnxruntime`, este último só para prep
    dotnet test DocAnon.slnx
    ```
 
-3. Publique:
+3. Gere o instalador (precisa do Inno Setup 6):
 
    ```powershell
-   dotnet publish src/DocAnon.App -c Release -r win-x64 --self-contained -o publish/app
-   dotnet publish src/DocAnon.Cli -c Release -r win-x64 --self-contained -o publish/cli
+   .\packaging\windows\build-installer.ps1 -Version 0.1.0
    ```
 
-O modelo de NER e o tessdata são copiados para `models/` ao lado do executável.
+   O script publica o app em `build\win-x64` e a linha de comando em `build\win-x64\cli`, confere se os modelos e as bibliotecas nativas estão no pacote e grava o instalador em `dist\`. Com `-SkipInstaller`, ele para depois da publicação.
+
+O modelo de NER e o tessdata são copiados para `models\` ao lado do executável. A linha de comando instalada em `cli\` usa a mesma pasta `models\` do app.
 
 ## Estrutura
 

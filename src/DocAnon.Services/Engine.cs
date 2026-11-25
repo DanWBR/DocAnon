@@ -102,7 +102,9 @@ public sealed class Engine : IDisposable
     public Engine(EngineOptions? options = null)
     {
         Options = options ?? new EngineOptions();
-        string[] extra = Options.ModelsFolder is { } m ? [m] : [];
+        // The installer puts the command-line tool in cli\, next to the app's models folder.
+        string parentModels = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "models"));
+        string[] extra = Options.ModelsFolder is { } m ? [m, parentModels] : [parentModels];
         if (Options.UseNer)
         {
             Ner = NerDetector.TryLoadDefault(extra.Select(f => Path.Combine(f, "ner")).ToArray());

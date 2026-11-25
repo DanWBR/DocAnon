@@ -8,6 +8,7 @@
         x:Class="DocAnon.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="DocAnon — anonimização local de documentos"
+        Icon="avares://DocAnon/Assets/DocAnon.ico"
         Width="1400" Height="900" MinWidth="1000" MinHeight="650">
 
   <Grid RowDefinitions="Auto,*,Auto">

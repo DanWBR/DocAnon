@@ -11,3 +11,5 @@ obj/
 __pycache__/
 *.docanon
 TestResults/
+/build/win-x64/
+/dist/

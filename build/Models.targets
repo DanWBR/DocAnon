@@ -1,6 +1,7 @@
 <Project>
-  <!-- Copies the NER model and the Tesseract data next to the executable, when they exist. -->
-  <ItemGroup>
+  <!-- Copies the NER model and the Tesseract data next to the executable, when they exist.
+       DocAnonSkipModels=true leaves them out (the installer's cli\ folder reads the app's copy). -->
+  <ItemGroup Condition="'$(DocAnonSkipModels)' != 'true'">
     <None Include="$(MSBuildThisFileDirectory)..\models\ner\*.onnx;$(MSBuildThisFileDirectory)..\models\ner\*.json;$(MSBuildThisFileDirectory)..\models\ner\vocab.txt"
           Link="models\ner\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
     <None Include="$(MSBuildThisFileDirectory)..\models\tessdata\*.traineddata"

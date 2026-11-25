@@ -6,6 +6,7 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>Assets\DocAnon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" />
@@ -14,6 +15,9 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DocAnon.Services\DocAnon.Services.csproj" />
