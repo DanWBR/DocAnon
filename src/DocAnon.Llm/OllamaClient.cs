@@ -106,12 +106,28 @@ public sealed partial class OllamaClient : IDisposable
             ["options"] = new JsonObject { ["temperature"] = 0, ["num_ctx"] = contextTokens },
         };
         if (schema is not null) body["format"] = schema.DeepClone();
-        using var resp = await _http.PostAsJsonAsync("api/chat", body, ct).ConfigureAwait(false);
-        string raw = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        if (!resp.IsSuccessStatusCode) throw new HttpRequestException($"Ollama respondeu {(int)resp.StatusCode}: {raw}");
+        // Reasoning models think before answering by default. For extraction tasks the thinking
+        // makes them several times slower and can use up the reply, so it is turned off unless asked.
+        if (!Think) body["think"] = false;
+        var (status, raw) = await PostAsync(body, ct).ConfigureAwait(false);
+        if (status == 400 && !Think && raw.Contains("think", StringComparison.OrdinalIgnoreCase))
+        {
+            body.Remove("think");
+            (status, raw) = await PostAsync(body, ct).ConfigureAwait(false);
+        }
+        if (status is < 200 or > 299) throw new HttpRequestException($"Ollama respondeu {status}: {raw}");
         var node = JsonNode.Parse(raw);
         string content = node?["message"]?["content"]?.GetValue<string>() ?? "";
         return ThinkRx().Replace(content, "").Trim();
+    }
+
+    /// <summary>Whether reasoning models may think before answering. Off by default.</summary>
+    public bool Think { get; set; }
+
+    private async Task<(int Status, string Body)> PostAsync(JsonObject body, CancellationToken ct)
+    {
+        using var resp = await _http.PostAsJsonAsync("api/chat", body, ct).ConfigureAwait(false);
+        return ((int)resp.StatusCode, await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
     }
 
     [GeneratedRegex(@"<think>.*?</think>", RegexOptions.Singleline)]

@@ -125,6 +125,8 @@ public class LlmTests
         });
         // The document text travels only inside the request to localhost.
         Assert.Contains(fake.Requests, r => r.Contains("Projeto Netuno"));
+        // Reasoning is off by default, so thinking models answer quickly.
+        Assert.All(fake.Requests.Where(r => r.Contains("\"messages\"")), r => Assert.Contains("\"think\":false", r));
     }
 
     [Fact]

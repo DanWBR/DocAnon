@@ -51,6 +51,19 @@ Uma sessão corresponde a uma conversa com a IA. Os documentos de uma sessão co
 4. Clique em **Anonimizar e verificar vazamentos**. A cópia só é liberada depois que a checagem passa ou depois que você confirma que revisou os apontamentos.
 5. Cole a resposta da IA na aba **Reidentificação**.
 
+## Modelos para o Ollama
+
+O DocAnon desliga o modo de raciocínio ("thinking") dos modelos, porque nas tarefas de extração ele deixa a resposta várias vezes mais lenta e pode consumir o espaço da resposta. Numa RTX 5070 Ti de 16 GB, com um relatório técnico de 6 páginas, a comparação foi esta:
+
+| Modelo | Tarefa | Resultado |
+|---|---|---|
+| `gemma4:latest` (7,5B) | sugestões de entidades e auditoria | 17 s, 14 sugestões distintas |
+| `gemma4:12b-it-qat` | sugestões de entidades | 30 s, 13 sugestões distintas |
+| `gemma4:12b-it-qat` | leitura de imagens | lê mais textos com números (tags, valores) que o 7,5B no mesmo tempo |
+| `qwen3.6:35b` | sugestões de entidades | 47 s, 8 sugestões; com 23 GB, não cabe numa GPU de 16 GB |
+
+Recomendação: `gemma4:latest` como modelo de texto e `gemma4:12b-it-qat` como modelo de visão. Cada um cabe inteiro numa GPU de 16 GB; se a memória não comportar os dois ao mesmo tempo, o Ollama troca um pelo outro. Modelos que não cabem inteiros na GPU funcionam, mas ficam bem mais lentos.
+
 ## Linha de comando
 
 ```powershell
