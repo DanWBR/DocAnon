@@ -53,16 +53,24 @@ Uma sessão corresponde a uma conversa com a IA. Os documentos de uma sessão co
 
 ## Modelos para o Ollama
 
-O DocAnon desliga o modo de raciocínio ("thinking") dos modelos, porque nas tarefas de extração ele deixa a resposta várias vezes mais lenta e pode consumir o espaço da resposta. Numa RTX 5070 Ti de 16 GB, com um relatório técnico de 6 páginas, a comparação foi esta:
+O DocAnon desliga o modo de raciocínio ("thinking") dos modelos, porque nas tarefas de extração ele deixa a resposta várias vezes mais lenta e pode consumir o espaço da resposta. A comparação abaixo foi feita numa RTX 5070 Ti de 16 GB, com quatro testes: um relatório técnico real de 6 páginas, um relatório fictício com 12 itens sensíveis conhecidos, um desenho fictício com 20 textos conhecidos e o mesmo desenho numa tela 2,5 vezes maior, que imita uma folha A1, onde o texto fica minúsculo depois que o modelo reduz a imagem.
 
-| Modelo | Tarefa | Resultado |
-|---|---|---|
-| `gemma4:latest` (7,5B) | sugestões de entidades e auditoria | 17 s, 14 sugestões distintas |
-| `gemma4:12b-it-qat` | sugestões de entidades | 30 s, 13 sugestões distintas |
-| `gemma4:12b-it-qat` | leitura de imagens | lê mais textos com números (tags, valores) que o 7,5B no mesmo tempo |
-| `qwen3.6:35b` | sugestões de entidades | 47 s, 8 sugestões; com 23 GB, não cabe numa GPU de 16 GB |
+| Modelo | Tamanho | Entidades, relatório real | Entidades, gabarito | Visão, desenho | Visão, folha A1 |
+|---|---|---|---|---|---|
+| `gemma4:latest` (7,5B) | 6,6 GB | 14 em 17 s | 9/12 em 7 s | 19/20 em 1 s | 9/20 em 1 s |
+| `gemma4:12b-it-qat` | 7,2 GB | 13 em 30 s | 10/12 em 8 s | 20/20 em 3 s | 1/20 em 196 s |
+| `qwen3.5:9b` | 6,6 GB | 14 em 25 s | 8/12 em 9 s | 19/20 em 5 s | 13/20 em 5 s |
+| `qwen3-vl:8b` | 6,2 GB | 0 em 194 s | 9/12 em 88 s | 19/20 em 23 s | 0 a 13/20 em 47 a 117 s |
+| `glm-ocr` | 2,7 GB | não se aplica | não se aplica | 7/20 em 4 s (só o carimbo) | 7/20 em 2 s (só o carimbo) |
+| `qwen3.6:35b` | 23 GB | 8 em 47 s | não testado | não testado | não testado |
 
-Recomendação: `gemma4:latest` como modelo de texto e `gemma4:12b-it-qat` como modelo de visão. Cada um cabe inteiro numa GPU de 16 GB; se a memória não comportar os dois ao mesmo tempo, o Ollama troca um pelo outro. Modelos que não cabem inteiros na GPU funcionam, mas ficam bem mais lentos.
+Recomendação:
+
+- **Texto:** `gemma4:latest`, que foi o mais rápido e achou tantas entidades quanto os outros. O `gemma4:12b-it-qat` é uma alternativa equivalente, um pouco mais lenta.
+- **Visão:** `qwen3.5:9b`. Foi o único que continuou lendo bem quando o texto ficou pequeno, como numa folha A1 inteira, e no tamanho normal leu tanto quanto os outros.
+- O `qwen3-vl:8b` é uma variante que sempre raciocina antes de responder e não aceita desligar isso, por isso fica lento e às vezes não responde.
+- O `glm-ocr` é feito para páginas de documento e leu só o carimbo do desenho, embora sem erros.
+- O `qwen3.6:35b` não cabe numa GPU de 16 GB e fica lento.
 
 ## Linha de comando
 
