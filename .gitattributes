@@ -1,0 +1,2 @@
+# Model files are compared by hash, so Git must not convert their line endings.
+models/** -text

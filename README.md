@@ -99,7 +99,7 @@ O perfil em JSON para a linha de comando tem este formato (o arquivo fica em tex
 
 ## Instalação
 
-Baixe `DocAnon-<versão>-win-x64-setup.exe` e rode. O instalador já leva o runtime do .NET, o modelo de NER e os dados do Tesseract, então o computador de destino não precisa de mais nada nem de acesso à internet. Por padrão, ele instala para todos os usuários em `Arquivos de Programas`. Se você escolher instalar só para você, ele não pede direitos de administrador. Uma opção do instalador coloca a linha de comando (`docanon`) no PATH.
+Baixe `DocAnon-<versão>-win-x64-setup.exe` da página de [releases](https://github.com/DanWBR/DocAnon/releases) e rode. O instalador já leva o runtime do .NET, o modelo de NER e os dados do Tesseract, então o computador de destino não precisa de mais nada nem de acesso à internet. Por padrão, ele instala para todos os usuários em `Arquivos de Programas`. Se você escolher instalar só para você, ele não pede direitos de administrador. Uma opção do instalador coloca a linha de comando (`docanon`) no PATH.
 
 A desinstalação não apaga os cofres de sessão nem os perfis de empresa em `%LOCALAPPDATA%\DocAnon`. Apague essa pasta se quiser removê-los.
 
@@ -111,15 +111,16 @@ Instalação silenciosa, só para o usuário atual:
 
 ## Compilação
 
-Requisitos: .NET 10 SDK e Python 3 com `onnxruntime`, este último só para preparar o modelo de NER.
+Requisitos: .NET 10 SDK e Python 3 com os pacotes `onnx` e `onnxruntime`. O Python só é usado para preparar o modelo de NER.
 
-1. Baixe o modelo de NER e o tessdata e prepare o modelo quantizado:
+1. Baixe os modelos e prepare o modelo quantizado:
 
    ```powershell
-   python tools/export_ner_model.py --source models/ner/source --out models/ner --model-id Davlan/bert-base-multilingual-cased-ner-hrl --license afl-3.0
+   pip install onnx onnxruntime
+   .\tools\fetch-models.ps1
    ```
 
-   `models/ner/source` deve conter `model.onnx`, `vocab.txt`, `config.json` e `tokenizer_config.json` do Hugging Face. `models/tessdata` deve conter `por.traineddata` e `eng.traineddata` do `tessdata_best`.
+   O script baixa o modelo `Davlan/bert-base-multilingual-cased-ner-hrl` do Hugging Face para `models/ner/source` (709 MB), quantiza o modelo em int8 para `models/ner/model.onnx` e baixa `por.traineddata` e `eng.traineddata` do `tessdata_best` para `models/tessdata`. Os arquivos estão fixados numa revisão de cada repositório e são conferidos pelo SHA-256, por isso todas as compilações levam os mesmos modelos. Se `models/ner/model.onnx` já existir, o script não baixa o modelo de novo. Depois da quantização, você pode apagar `models/ner/source`.
 
 2. Compile e teste:
 
@@ -131,10 +132,21 @@ Requisitos: .NET 10 SDK e Python 3 com `onnxruntime`, este último só para prep
 3. Gere o instalador (precisa do Inno Setup 6):
 
    ```powershell
-   .\packaging\windows\build-installer.ps1 -Version 0.1.0
+   .\packaging\windows\build-installer.ps1
    ```
 
-   O script publica o app em `build\win-x64` e a linha de comando em `build\win-x64\cli`, confere se os modelos e as bibliotecas nativas estão no pacote e grava o instalador em `dist\`. Com `-SkipInstaller`, ele para depois da publicação.
+   O script lê a versão de `Directory.Build.props`, a menos que você passe `-Version`. Se faltar algum modelo, ele roda `tools\fetch-models.ps1` antes. Depois, ele publica o app em `build\win-x64` e a linha de comando em `build\win-x64\cli`, confere se os modelos e as bibliotecas nativas estão no pacote e grava o instalador em `dist\`. Com `-SkipInstaller`, ele para depois da publicação.
+
+### Integração contínua
+
+O workflow `.github/workflows/windows-installer.yml` roda no GitHub Actions a cada push para `master`, a cada pull request e quando você o dispara à mão na aba Actions. Ele baixa os modelos (que ficam em cache entre as execuções), roda os testes e gera o instalador, que fica disponível como artefato da execução com a versão `<versão>-ci.<número da execução>`.
+
+Quando você envia uma tag `v<versão>`, o workflow também cria uma release no GitHub com o instalador anexado:
+
+```powershell
+git tag v0.1.2
+git push origin v0.1.2
+```
 
 O modelo de NER e o tessdata são copiados para `models\` ao lado do executável. A linha de comando instalada em `cli\` usa a mesma pasta `models\` do app.
 

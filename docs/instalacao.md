@@ -23,7 +23,7 @@ O instalador já leva o runtime do .NET, o modelo de reconhecimento de nomes e o
 
 ## Instalador
 
-Rode `DocAnon-<versão>-win-x64-setup.exe`. O instalador pergunta se a instalação será para todos os usuários ou só para você:
+Baixe `DocAnon-<versão>-win-x64-setup.exe` da página de [releases](https://github.com/DanWBR/DocAnon/releases) e rode o arquivo. O instalador pergunta se a instalação será para todos os usuários ou só para você:
 
 - **Para todos os usuários:** o DocAnon vai para `C:\Program Files\DocAnon`, e o instalador pede direitos de administrador.
 - **Só para você:** o DocAnon vai para a sua pasta de perfil, e o instalador não pede direitos de administrador.
@@ -61,4 +61,6 @@ Use **Adicionar ou remover programas** no Windows. A desinstalação remove o ap
 
 ## Compilar a partir do código
 
-Se você quiser compilar o DocAnon, precisa do .NET 10 SDK, do Python 3 com `onnxruntime` e do Inno Setup 6. Os passos estão no [README do repositório](https://github.com/DanWBR/DocAnon#compilação). O script `packaging\windows\build-installer.ps1` publica o aplicativo e a linha de comando, confere se os modelos e as bibliotecas nativas estão no pacote e gera o instalador em `dist\`.
+Se você quiser compilar o DocAnon, precisa do .NET 10 SDK, do Python 3 com `onnx` e `onnxruntime` e do Inno Setup 6. Os passos estão no [README do repositório](https://github.com/DanWBR/DocAnon#compilação). O script `tools\fetch-models.ps1` baixa os modelos e prepara o modelo de NER. Depois, o script `packaging\windows\build-installer.ps1` publica o aplicativo e a linha de comando, confere se os modelos e as bibliotecas nativas estão no pacote e gera o instalador em `dist\`.
+
+O GitHub Actions gera o mesmo instalador a cada push para `master`. Quando uma tag `v<versão>` é enviada, ele também publica o instalador numa release.

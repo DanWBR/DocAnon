@@ -1,0 +1,101 @@
+name: Windows installer
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # The quantized NER model and tessdata are pinned by hash in fetch-models.ps1, so the
+      # cache stays valid until that script or the export script changes.
+      - name: Cache models
+        id: models
+        uses: actions/cache@v6
+        with:
+          path: |
+            models/ner/model.onnx
+            models/ner/ner-model.json
+            models/ner/vocab.txt
+            models/tessdata/*.traineddata
+          key: models-${{ hashFiles('tools/fetch-models.ps1', 'tools/export_ner_model.py') }}
+
+      - name: Fetch models
+        run: |
+          if ("${{ steps.models.outputs.cache-hit }}" -ne "true") { python -m pip install --quiet onnx==1.21.0 onnxruntime==1.24.4 }
+          ./tools/fetch-models.ps1
+          if (Test-Path models/ner/source) { Remove-Item models/ner/source -Recurse -Force }
+
+      - name: Version
+        id: version
+        run: |
+          [xml]$props = Get-Content Directory.Build.props -Raw
+          $base = $props.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ } | Select-Object -First 1
+          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}".TrimStart("v") }
+          else { $v = "$base-ci.${{ github.run_number }}" }
+          "value=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "version: $v"
+
+      - name: Test
+        run: dotnet test DocAnon.slnx -c Release
+
+      - name: Install Inno Setup
+        run: |
+          $iscc = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe") | Where-Object { Test-Path $_ }
+          if (-not $iscc) { choco install innosetup --no-progress -y }
+
+      - name: Build installer
+        run: ./packaging/windows/build-installer.ps1 -Version "${{ steps.version.outputs.value }}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: DocAnon-${{ steps.version.outputs.value }}-win-x64-setup
+          path: dist/*-setup.exe
+          if-no-files-found: error
+
+  # A tag such as v0.1.2 publishes the installer as a GitHub release.
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" dist/*-setup.exe --repo "${{ github.repository }}" --title "DocAnon ${{ github.ref_name }}" --generate-notes
