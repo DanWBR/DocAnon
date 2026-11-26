@@ -6,6 +6,7 @@ using DocAnon.Core.Model;
 using DocAnon.Core.Profiles;
 using DocAnon.Core.Pseudonymization;
 using DocAnon.Core.Vault;
+using DocAnon.Extraction;
 using DocAnon.Services;
 
 Console.OutputEncoding = Encoding.UTF8;
@@ -21,8 +22,8 @@ var passwordOpt = new Option<string?>("--senha") { Description = "Senha do cofre
 var outOpt = new Option<string>("--saida") { Description = "Pasta de saída.", DefaultValueFactory = _ => "anonimizado" };
 var noImages = new Option<bool>("--sem-imagens") { Description = "Exporta só o texto." };
 var diagramsOpt = new Option<string>("--diagramas") { Description = "auto, todas ou nunca: quais páginas de PDF tratar como diagrama.", DefaultValueFactory = _ => "auto" };
-var inOpt = new Option<string?>("--entrada") { Description = "Arquivo com a resposta da IA. Sem ele, lê a entrada padrão." };
-var outFileOpt = new Option<string?>("--arquivo-saida") { Description = "Arquivo para gravar o texto reidentificado." };
+var inOpt = new Option<string?>("--entrada") { Description = "Arquivo que a IA produziu (TXT, MD, CSV, JSON, HTML, DOCX, PPTX, XLSX ou PDF). Sem ele, lê o texto da entrada padrão." };
+var outFileOpt = new Option<string?>("--arquivo-saida") { Description = "Arquivo restaurado. Sem ele, o texto vai para a saída padrão e os outros formatos ganham um arquivo \".restaurado\" ao lado do original." };
 var llmOpt = new Option<string?>("--llm") { Description = "Modelo do Ollama local para sugerir entidades e auditar o texto (por exemplo gemma4:latest)." };
 var llmVisionOpt = new Option<string?>("--llm-visao") { Description = "Modelo de visão do Ollama local para conferir as imagens tarjadas." };
 var acceptLlmOpt = new Option<bool>("--aceitar-llm") { Description = "Aplica as sugestões do LLM sem revisão (na interface elas começam desmarcadas)." };
@@ -129,6 +130,8 @@ anonymize.SetAction(async (r, ct) =>
             foreach (var g in p.Page.AutoCovers.Where(c => c.Include).GroupBy(c => c.Reason))
                 Console.WriteLine($"  {p.Page.Source}: {g.Count()} tarja(s) sem texto ({g.Key})");
         foreach (var g in pkg.TextLeaks.GroupBy(l => l.Reason)) Console.WriteLine($"  VAZAMENTO no texto ({g.Count()}x): {g.Key}");
+        foreach (var g in pkg.NativeLeaks.GroupBy(l => l.Reason)) Console.WriteLine($"  VAZAMENTO na cópia {pkg.NativeCopyExtension} ({g.Count()}x): {g.Key}");
+        foreach (var w in pkg.NativeWarnings) Console.WriteLine($"  cópia {pkg.NativeCopyExtension}: {w}");
         foreach (var g in pkg.VisualLeaks.GroupBy(l => l.Source)) Console.WriteLine($"  VAZAMENTO na imagem {g.Key}: ainda legível: {string.Join(", ", g.Select(l => $"\"{l.Text}\" em ({l.Box.X:0},{l.Box.Y:0})"))}");
         foreach (var w in written) Console.WriteLine("  -> " + w);
         if (pkg.HasLeaks) exit = 2;
@@ -144,6 +147,21 @@ var reidentify = new Command("reidentify", "Restaura os valores reais na respost
 reidentify.SetAction(async (r, ct) =>
 {
     var (session, _) = OpenSession(r, create: false);
+    // A file keeps its format: Word, PowerPoint, Excel and PDF files come back as files of the same type.
+    if (r.GetValue(inOpt) is { } file && (r.GetValue(outFileOpt) is not null || Path.GetExtension(file).ToLowerInvariant() is not (".txt" or ".md")))
+    {
+        if (!FileReidentifier.IsSupported(file))
+        {
+            Console.Error.WriteLine($"O app não restaura arquivos {Path.GetExtension(file)}.");
+            return 1;
+        }
+        string target = r.GetValue(outFileOpt) ?? FileReidentifier.OutputPathFor(file, session.Registry, session.Factors);
+        var fr = await FileReidentifier.RestoreAsync(file, target, session.Registry, session.Factors, ct);
+        foreach (var w in fr.Warnings) Console.Error.WriteLine("aviso: " + w);
+        if (fr.UnknownMarkers.Count > 0) Console.Error.WriteLine("marcadores que a sessão não conhece: " + string.Join(", ", fr.UnknownMarkers));
+        Console.Error.WriteLine($"{fr.Markers} marcadores restaurados, {fr.Quantities} números convertidos -> {fr.OutputPath}");
+        return fr.UnknownMarkers.Count > 0 ? 3 : 0;
+    }
     string answer = r.GetValue(inOpt) is { } inPath ? await File.ReadAllTextAsync(inPath, ct) : await Console.In.ReadToEndAsync(ct);
     var result = Reidentifier.Restore(answer, session.Registry, session.Factors);
     if (r.GetValue(outFileOpt) is { } outPath) await File.WriteAllTextAsync(outPath, result.Text, ct);

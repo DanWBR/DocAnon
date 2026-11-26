@@ -44,8 +44,8 @@ Se você instalou o DocAnon com a opção de PATH, chame `docanon` de qualquer t
 | `--llm-visao <modelo>` | anonymize | liga a conferência das imagens por um modelo de visão |
 | `--aceitar-llm` | detect, anonymize | aplica as sugestões do LLM sem revisão |
 | `--json` | detect | saída em JSON, com cada trecho, tipo, detector e confiança |
-| `--entrada <arquivo>` | reidentify | arquivo com a resposta da IA; sem ele, a resposta é lida da entrada padrão |
-| `--arquivo-saida <arquivo>` | reidentify | grava o texto restaurado nesse arquivo |
+| `--entrada <arquivo>` | reidentify | arquivo que a IA produziu (TXT, MD, CSV, JSON, XML, HTML, DOCX, PPTX, XLSX ou PDF); sem ele, a resposta é lida da entrada padrão |
+| `--arquivo-saida <arquivo>` | reidentify | grava o arquivo restaurado nesse caminho; sem ele, o texto de um TXT ou MD vai para a saída padrão, e os outros formatos ganham um arquivo `.restaurado` ao lado do original |
 | `--raiz <pasta>` | todos que usam cofres | pasta dos cofres, no lugar de `%LOCALAPPDATA%\DocAnon` |
 | `--pagina <n>` e `--png <arquivo>` | render | página a desenhar e arquivo de saída |
 | `--destino <arquivo>` | export-profile | arquivo da cópia exportada |
@@ -77,6 +77,12 @@ Restaurar a resposta da IA:
 
 ```powershell
 docanon reidentify --sessao estudo-tocha --entrada resposta.md --arquivo-saida resposta-real.md
+```
+
+Restaurar um relatório em Word que a IA escreveu, que fica gravado como `relatorio-ia.restaurado.docx`:
+
+```powershell
+docanon reidentify --sessao estudo-tocha --entrada relatorio-ia.docx
 ```
 
 Transformar um perfil em JSON num perfil cifrado do aplicativo:

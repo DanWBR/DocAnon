@@ -86,6 +86,12 @@ public sealed class VisualPage
 
     public List<VisualWord> Words { get; } = [];
 
+    /// <summary>Zero-based PDF page this image belongs to, or -1 when it does not come from a PDF page.</summary>
+    public int PdfPage { get; init; } = -1;
+
+    /// <summary>Where an image cropped from a PDF page sits on that page, in the page's pixels. Null for a whole page.</summary>
+    public BoundingBox? BoxOnPage { get; init; }
+
     /// <summary>
     /// True once every piece of text on the page is known, from the text layer or from OCR.
     /// The export refuses pages that are not verified, because their text could not be redacted.
@@ -127,10 +133,35 @@ public sealed class ExtractedDocument
     public List<string> Warnings { get; } = [];
 
     /// <summary>
-    /// Writes an anonymized copy of the source file in its native format (only Visio for now),
-    /// given the replacements in document offsets.
+    /// Pages that only go into the anonymized copy in the source format: the text pages of a
+    /// PDF, which the text export does not send as images.
     /// </summary>
-    public Func<IReadOnlyList<TextReplacement>, Stream, Task>? WriteNativeCopy { get; init; }
+    public List<VisualPage> NativePages { get; } = [];
+
+    /// <summary>Writes an anonymized copy of the source file in its native format (DOCX, PPTX, XLSX, CSV, Visio).</summary>
+    public Func<NativeCopyContext, Stream, Task>? WriteNativeCopy { get; init; }
 
     public string? NativeCopyExtension { get; init; }
+}
+
+/// <summary>What a native-copy writer needs: the reviewed replacements and the session that made them.</summary>
+public sealed class NativeCopyContext
+{
+    /// <summary>The replacements applied to <see cref="ExtractedDocument.Text"/>, in document offsets.</summary>
+    public required IReadOnlyList<TextReplacement> Replacements { get; init; }
+
+    public required DocAnon.Core.Pseudonymization.EntityRegistry Registry { get; init; }
+    public required DocAnon.Core.Quantities.ScaleFactors Factors { get; init; }
+    public DocAnon.Core.Profiles.CompanyProfile? Profile { get; init; }
+
+    /// <summary>The decimal separator that the review used, so the copy reads numbers the same way.</summary>
+    public bool? CommaIsDecimal { get; init; }
+
+    /// <summary>The redacted PNG of each exported visual page. Pages that are missing here were not exported.</summary>
+    public IReadOnlyDictionary<VisualPage, byte[]> RedactedImages { get; init; } = new Dictionary<VisualPage, byte[]>();
+
+    /// <summary>Real values that the writer still finds in the copy after the replacements.</summary>
+    public List<DocAnon.Core.Export.LeakFinding> Leaks { get; } = [];
+
+    public List<string> Warnings { get; } = [];
 }

@@ -16,13 +16,13 @@ Todo documento vira um texto em Markdown, e todos os detectores trabalham sobre 
 
 | Formato | Extensões | Texto | Imagem tarjada | Cópia nativa |
 |---|---|---|---|---|
-| PDF | `.pdf` | camada de texto ou OCR | páginas de desenho, páginas escaneadas e imagens grandes | não |
-| Word | `.docx`, `.docm`, `.dotx` | sim | imagens embutidas | não |
-| Excel | `.xlsx`, `.xlsm` | sim | não | não |
-| PowerPoint | `.pptx`, `.pptm` | sim | imagens dos slides | não |
+| PDF | `.pdf` | camada de texto ou OCR | páginas de desenho, páginas escaneadas e imagens grandes | `.pdf` com todas as páginas tarjadas |
+| Word | `.docx`, `.docm`, `.dotx` | sim | imagens embutidas | mesma extensão |
+| Excel | `.xlsx`, `.xlsm` | sim | não | mesma extensão |
+| PowerPoint | `.pptx`, `.pptm` | sim | imagens dos slides | mesma extensão |
 | Imagens | `.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff`, `.bmp`, `.gif`, `.webp` | OCR | sim | não |
-| Texto | `.txt`, `.md`, `.markdown`, `.log`, `.json`, `.xml` | sim | não | não |
-| CSV | `.csv` | tabela | não | não |
+| Texto | `.txt`, `.md`, `.markdown`, `.log`, `.json`, `.xml` | sim | não | mesma extensão, exceto Markdown |
+| CSV | `.csv` | tabela | não | `.csv` |
 | DWSIM | `.dwxmz`, `.dwxml` | resumo da simulação | não | não |
 | DXF | `.dxf` | sim | desenho redesenhado | não |
 | SVG | `.svg` | sim | desenho redesenhado | não |
@@ -96,5 +96,25 @@ Quando você clica em **Salvar pacote**, o DocAnon grava na pasta escolhida os a
 |---|---|
 | `<nome>.anon.md` | o texto anonimizado |
 | `<nome>.anon.p01.png`, `p02`... | uma imagem tarjada por página ou imagem |
-| `<nome>.anon.imagens.pdf` | as mesmas imagens num PDF sem camada de texto |
-| `<nome>.anon.vsdx` | só para Visio, a cópia anonimizada |
+| `<nome>.anon.imagens.pdf` | as mesmas imagens num PDF sem camada de texto, exceto quando o original é um PDF |
+| `<nome>.anon.docx`, `.pptx`, `.xlsx`, `.pdf`, `.csv`, `.txt`, `.vsdx`... | a cópia anonimizada no formato do original |
+
+## Cópia no formato original
+
+Quando o formato tem cópia nativa, o pacote leva uma cópia do arquivo no mesmo formato, para que você possa anexá-la na IA como se fosse o original. A cópia recebe as mesmas decisões da revisão. Cada valor que a revisão anonimizou vira o marcador da sessão em qualquer lugar do arquivo, e um número é escalado quando a revisão escalou o mesmo texto, por exemplo "1.200 t/d" ou "1200" numa coluna "Vazão (kg/h)".
+
+**Word, PowerPoint e Excel:** o DocAnon troca o texto dentro de cada parágrafo, célula, cabeçalho, rodapé, nota, comentário, caixa de texto e slide mestre. Se um marcador cair em dois trechos com formatação diferente, o primeiro trecho recebe o marcador e mantém a sua formatação. Cada imagem que foi exportada é trocada pela versão tarjada. Se uma imagem não foi exportada, ela vira um retângulo cinza. Como a revisão não mostra as outras partes do arquivo, a cópia também apaga os autores do arquivo, dos comentários e das revisões, o texto de revisões excluídas, os números guardados nos gráficos e o conteúdo dos arquivos incorporados. No Excel, as planilhas ocultas ficam vazias, e as fórmulas são recalculadas quando o arquivo é aberto.
+
+**PDF:** um PDF não permite trocar o texto no lugar sem refazer as fontes, por isso a cópia tem uma imagem tarjada para cada página do original, na mesma ordem. As páginas de texto são desenhadas e cobertas onde o texto foi trocado, e cada tarja leva o marcador. As imagens recortadas dessas páginas voltam ao lugar já tarjadas. Depois disso, o OCR lê cada página da cópia, e o DocAnon cobre o que ainda for legível, como nas outras imagens. Se a camada de texto de uma página não for legível, o que acontece com fontes sem a tabela ToUnicode, a página passa pelo OCR como uma página escaneada.
+
+**CSV e texto:** a cópia mantém o separador, as aspas, a codificação e as quebras de linha do original. Num CSV, a unidade do cabeçalho vale para os números da coluna, como numa tabela.
+
+A checagem de vazamento também roda sobre a cópia. Os pontos que ela encontrar aparecem na lista da aba **3. Exportação** com a origem "cópia".
+
+## Arquivos que a IA produz
+
+A IA pode devolver um relatório em Word, uma apresentação, uma planilha ou um PDF com os marcadores. Na aba **4. Reidentificação**, o botão **Restaurar arquivos...** aceita arquivos TXT, Markdown, CSV, JSON, XML, HTML, DOCX, PPTX, XLSX e PDF. O DocAnon troca cada marcador pelo valor real, divide os números escalados pelos fatores da sessão e grava o resultado ao lado do arquivo da IA, no mesmo formato e com `.restaurado` antes da extensão. Se o nome do arquivo tiver marcadores, eles também são restaurados.
+
+**Word, PowerPoint e Excel:** o valor real entra no lugar do marcador e mantém a formatação do trecho. No Excel, os números das células também são convertidos de volta quando a coluna tem a unidade no cabeçalho.
+
+**PDF:** o DocAnon cobre cada marcador com um retângulo branco e escreve o valor real por cima, na mesma posição e no mesmo tamanho de letra. Se o valor real for mais longo que o marcador, a letra diminui até 55 % para caber no espaço até a próxima palavra. O texto original continua por baixo do retângulo, por isso, se você copiar o texto do PDF, o marcador vem junto com o valor real.

@@ -12,22 +12,29 @@ namespace DocAnon.Extraction;
 
 internal static class OpenXmlImages
 {
-    public static byte[]? Read(OpenXmlPart owner, string? relId)
+    public static byte[]? Read(OpenXmlPart owner, string? relId) => ReadNamed(owner, relId).Data;
+
+    /// <summary>The bytes of a picture and the name of its part inside the package ("word/media/image1.png").</summary>
+    public static (byte[]? Data, string? Part) ReadNamed(OpenXmlPart owner, string? relId)
     {
-        if (string.IsNullOrEmpty(relId)) return null;
+        if (string.IsNullOrEmpty(relId)) return (null, null);
         try
         {
-            if (owner.GetPartById(relId) is not ImagePart part) return null;
+            if (owner.GetPartById(relId) is not ImagePart part) return (null, null);
             using var s = part.GetStream();
             using var ms = new MemoryStream();
             s.CopyTo(ms);
-            return ms.ToArray();
+            return (ms.ToArray(), part.Uri.OriginalString.TrimStart('/'));
         }
         catch (ArgumentOutOfRangeException)
         {
-            return null;
+            return (null, null);
         }
     }
+
+    /// <summary>The native-copy writer of an Office file: markers and scaled numbers in the text, redacted pictures.</summary>
+    public static Func<NativeCopyContext, Stream, Task> CopyWriter(byte[] bytes, IReadOnlyDictionary<string, VisualPage> mediaPages) =>
+        async (c, output) => await output.WriteAsync(Native.OfficeCopies.Anonymize(bytes, c, mediaPages));
 }
 
 /// <summary>Word documents: body, tables, headers, footers, footnotes, comments and embedded images.</summary>
@@ -38,9 +45,11 @@ public sealed class DocxReader : IDocumentReader
     public Task<ExtractedDocument> ReadAsync(string path, ExtractionOptions o, CancellationToken ct)
     {
         var b = new DocumentBuilder(Path.GetFileName(path), "docx");
-        using var doc = WordprocessingDocument.Open(path, false);
+        byte[] bytes = File.ReadAllBytes(path);
+        using var doc = WordprocessingDocument.Open(new MemoryStream(bytes), false);
         var main = doc.MainDocumentPart ?? throw new InvalidDataException("DOCX sem corpo.");
         int images = 0;
+        var media = new Dictionary<string, VisualPage>(StringComparer.OrdinalIgnoreCase);
 
         void Walk(OpenXmlElement container, OpenXmlPart owner, string source)
         {
@@ -78,10 +87,10 @@ public sealed class DocxReader : IDocumentReader
 
         void Image(OpenXmlPart owner, string? relId, string source)
         {
-            var data = OpenXmlImages.Read(owner, relId);
+            var (data, part) = OpenXmlImages.ReadNamed(owner, relId);
             if (data is null) return;
             images++;
-            ImageTools.AddImage(b, o, data, $"{source}, imagem {images}");
+            if (ImageTools.AddImage(b, o, data, $"{source}, imagem {images}") is { } page && part is not null) media.TryAdd(part, page);
         }
 
         Walk(main.Document?.Body ?? throw new InvalidDataException("DOCX sem corpo."), main, "corpo");
@@ -113,7 +122,7 @@ public sealed class DocxReader : IDocumentReader
                 if (t.Length > 0) b.Paragraph($"Comentário de {c.Author?.Value ?? "?"}: {t}", "comentário", BlockKind.Note);
             }
         }
-        return Task.FromResult(b.Build());
+        return Task.FromResult(b.Build(OpenXmlImages.CopyWriter(bytes, media), Path.GetExtension(path).ToLowerInvariant()));
     }
 
     private static int HeadingLevel(string? style)
@@ -162,7 +171,8 @@ public sealed class XlsxReader : IDocumentReader
     public Task<ExtractedDocument> ReadAsync(string path, ExtractionOptions o, CancellationToken ct)
     {
         var b = new DocumentBuilder(Path.GetFileName(path), "xlsx");
-        using var doc = SpreadsheetDocument.Open(path, false);
+        byte[] bytes = File.ReadAllBytes(path);
+        using var doc = SpreadsheetDocument.Open(new MemoryStream(bytes), false);
         var wb = doc.WorkbookPart ?? throw new InvalidDataException("XLSX sem pasta de trabalho.");
         var sst = wb.SharedStringTablePart?.SharedStringTable?.Elements<SharedStringItem>().Select(i => i.InnerText).ToArray() ?? [];
         var formats = wb.WorkbookStylesPart?.Stylesheet;
@@ -211,7 +221,7 @@ public sealed class XlsxReader : IDocumentReader
             b.Heading($"Planilha {name}", 2, name);
             b.Table(rows, name);
         }
-        return Task.FromResult(b.Build());
+        return Task.FromResult(b.Build(OpenXmlImages.CopyWriter(bytes, new Dictionary<string, VisualPage>()), Path.GetExtension(path).ToLowerInvariant()));
     }
 
     private static HashSet<uint> DateStyleIndexes(Stylesheet? ss)
@@ -272,9 +282,11 @@ public sealed class PptxReader : IDocumentReader
     public Task<ExtractedDocument> ReadAsync(string path, ExtractionOptions o, CancellationToken ct)
     {
         var b = new DocumentBuilder(Path.GetFileName(path), "pptx");
-        using var doc = PresentationDocument.Open(path, false);
+        byte[] bytes = File.ReadAllBytes(path);
+        using var doc = PresentationDocument.Open(new MemoryStream(bytes), false);
         var pres = doc.PresentationPart ?? throw new InvalidDataException("PPTX sem apresentação.");
         int n = 0;
+        var media = new Dictionary<string, VisualPage>(StringComparer.OrdinalIgnoreCase);
         foreach (var sid in pres.Presentation?.SlideIdList?.Elements<P.SlideId>() ?? [])
         {
             ct.ThrowIfCancellationRequested();
@@ -303,11 +315,11 @@ public sealed class PptxReader : IDocumentReader
                             .ToList(), source);
                         break;
                     case P.Picture pic:
-                        var data = OpenXmlImages.Read(sp, pic.BlipFill?.Blip?.Embed?.Value);
+                        var (data, part) = OpenXmlImages.ReadNamed(sp, pic.BlipFill?.Blip?.Embed?.Value);
                         if (data is not null)
                         {
                             img++;
-                            ImageTools.AddImage(b, o, data, $"{source}, imagem {img}");
+                            if (ImageTools.AddImage(b, o, data, $"{source}, imagem {img}") is { } page && part is not null) media.TryAdd(part, page);
                         }
                         break;
                 }
@@ -322,6 +334,6 @@ public sealed class PptxReader : IDocumentReader
                 if (all.Length > 0) b.Paragraph("Notas do slide: " + all, source, BlockKind.Note);
             }
         }
-        return Task.FromResult(b.Build());
+        return Task.FromResult(b.Build(OpenXmlImages.CopyWriter(bytes, media), Path.GetExtension(path).ToLowerInvariant()));
     }
 }

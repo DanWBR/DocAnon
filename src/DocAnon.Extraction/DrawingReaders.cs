@@ -283,8 +283,9 @@ public sealed class VisioReader : IDocumentReader
             }
         }
 
-        async Task WriteCopy(IReadOnlyList<TextReplacement> reps, Stream output)
+        async Task WriteCopy(NativeCopyContext c, Stream output)
         {
+            var reps = c.Replacements;
             using var src = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
             using var dst = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true);
             foreach (var entry in src.Entries)

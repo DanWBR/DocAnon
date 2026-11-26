@@ -43,6 +43,17 @@ public sealed class PdfDocumentReader : IDocumentReader
                 .ToList();
             int letters = words.Sum(w => w.Text.Length);
 
+            // A font without a ToUnicode map gives control or private-use characters instead of
+            // text. If the detectors read that layer, they would not see the names drawn on the
+            // page, so a page with unreadable text goes through OCR like a scan.
+            int unreadable = words.Sum(w => w.Text.Count(Unreadable));
+            if (unreadable > 0 && unreadable > 0.05 * letters)
+            {
+                b.Warnings.Add($"{source}: a camada de texto do PDF não é legível ({unreadable} de {letters} caracteres), por isso a página passou pelo OCR.");
+                words.Clear();
+                letters = 0;
+            }
+
             byte[]? rendered = null;
             int rw = 0, rh = 0;
             bool Render()
@@ -65,10 +76,10 @@ public sealed class PdfDocumentReader : IDocumentReader
                 }
                 bool vectorDrawing = o.Diagrams == DiagramDetection.AllPages || (o.Diagrams == DiagramDetection.Auto && page.Paths.Count >= 40);
                 if (vectorDrawing) b.Heading($"Diagrama, {source}", 2, source);
-                ImageTools.AddImage(b, o, rendered!, source, asLabels: vectorDrawing);
-                if (vectorDrawing)
+                var whole = ImageTools.AddImage(b, o, rendered!, source, asLabels: vectorDrawing, pdfPage: index);
+                if (vectorDrawing && whole is not null)
                 {
-                    var vp = b.Pages[^1];
+                    var vp = whole;
                     foreach (var img in page.GetImages())
                     {
                         var r = img.BoundingBox;
@@ -96,7 +107,7 @@ public sealed class PdfDocumentReader : IDocumentReader
                     continue;
                 }
                 byte[] png = rendered!;
-                var vp = new VisualPage(b.Pages.Count, source, rw, rh, () => png);
+                var vp = new VisualPage(b.Pages.Count, source, rw, rh, () => png) { PdfPage = index };
                 b.Pages.Add(vp);
                 b.Heading($"Diagrama, {source}", 2, source);
                 b.PlacedText(words, source, asLabels: true, page: vp, fromOcr: false);
@@ -113,7 +124,18 @@ public sealed class PdfDocumentReader : IDocumentReader
                 continue;
             }
 
-            b.PlacedText(words, source, asLabels: false, page: null, fromOcr: false);
+            // A text page goes out as text. For the PDF copy it is also rendered and redacted, so its
+            // words are linked to a page that only the native copy uses.
+            VisualPage? native = null;
+            if (o.Rasterizer is { } rasterizer)
+            {
+                bool turned = rotation is 90 or 270;
+                int pw = (int)Math.Round((turned ? crop.Height : crop.Width) * scale), ph = (int)Math.Round((turned ? crop.Width : crop.Height) * scale);
+                int pageIndex = index;
+                native = new VisualPage(b.NativePages.Count, source, pw, ph, () => rendered ?? rasterizer.Render(bytes, pageIndex, o.Dpi).Png) { PdfPage = index, TextVerified = true };
+                b.NativePages.Add(native);
+            }
+            b.PlacedText(words, source, asLabels: false, page: native, fromOcr: false);
 
             double pageArea = page.Width * page.Height;
             int k = 0;
@@ -129,7 +151,7 @@ public sealed class PdfDocumentReader : IDocumentReader
                 k++;
                 var box = ToPixels(r.Left, r.Bottom, r.Right, r.Top, crop, rotation, scale);
                 var (cropped, _, _) = ImageTools.Crop(rendered!, box);
-                ImageTools.AddImage(b, o, cropped, $"{source}, imagem {k}");
+                ImageTools.AddImage(b, o, cropped, $"{source}, imagem {k}", pdfPage: index, boxOnPage: box);
             }
         }
         return Task.FromResult(b.Build());
@@ -159,6 +181,9 @@ public sealed class PdfDocumentReader : IDocumentReader
         double x0 = Math.Min(a.X, b.X), x1 = Math.Max(a.X, b.X), y0 = Math.Min(a.Y, b.Y), y1 = Math.Max(a.Y, b.Y);
         return new BoundingBox((float)(x0 * scale), (float)(y0 * scale), (float)((x1 - x0) * scale), (float)((y1 - y0) * scale));
     }
+
+    private static bool Unreadable(char c) =>
+        c == '�' || (char.IsControl(c) && c is not ('\t' or '\n' or '\r')) || char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.PrivateUse;
 
     private static bool LooksLikeDiagram(Page page, List<PlacedWord> words)
     {

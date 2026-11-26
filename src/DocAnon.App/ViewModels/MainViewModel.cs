@@ -590,6 +590,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         foreach (var l in pkg.TextLeaks) Leaks.Add(new LeakItem("texto", l.Text, l.Reason));
         foreach (var l in pkg.VisualLeaks) Leaks.Add(new LeakItem(l.Source, l.Text, "valor original ainda legível na imagem"));
         foreach (var s in pkg.SkippedPages) Leaks.Add(new LeakItem("imagem", "", "não exportada: " + s));
+        foreach (var l in pkg.NativeLeaks) Leaks.Add(new LeakItem("cópia " + pkg.NativeCopyExtension, l.Text, l.Reason));
+        foreach (var w in pkg.NativeWarnings) Leaks.Add(new LeakItem("cópia " + pkg.NativeCopyExtension, "", w));
         ExportImages.Clear();
         foreach (var p in pkg.Pages) ExportImages.Add(new RedactedImage(p.Page.Source, p.Png));
         LeaksAcknowledged = false;
@@ -598,7 +600,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         SaveSession();
         int markers = pkg.Anonymized.Replacements.Count(r => r.Action == SpanAction.Pseudonymize);
         int scaled = pkg.Anonymized.Replacements.Count(r => r.Action == SpanAction.Scale);
-        ExportSummary = $"{markers} marcadores, {scaled} números escalados, {pkg.Pages.Count} imagens.";
+        ExportSummary = $"{markers} marcadores, {scaled} números escalados, {pkg.Pages.Count} imagens"
+                        + (pkg.NativeCopyExtension is { } ext ? $", cópia em {ext.TrimStart('.').ToUpperInvariant()}." : ".");
         OnPropertyChanged(nameof(ExportSummary));
         d.Status = "exportado";
         Status = pkg.HasLeaks || pkg.SkippedPages.Count > 0
@@ -650,6 +653,46 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                          + (r.UnknownMarkers > 0 ? $", {r.UnknownMarkers} marcadores que não existem nesta sessão." : ".");
         Status = RestoreSummary;
     }
+
+    public ObservableCollection<RestoredFileView> RestoredFiles { get; } = [];
+
+    /// <summary>
+    /// Restores files that the AI wrote, keeping their format. Each restored file is written next
+    /// to the one the AI produced, with ".restaurado" before the extension.
+    /// </summary>
+    public Task RestoreFilesAsync(IReadOnlyList<string> paths) => RunBusy("Restaurando os arquivos da IA...", async ct =>
+    {
+        if (Session is null)
+        {
+            Status = "Abra a sessão em que o documento foi anonimizado.";
+            return;
+        }
+        var session = Session;
+        int done = 0;
+        foreach (var path in paths)
+        {
+            if (!FileReidentifier.IsSupported(path))
+            {
+                RestoredFiles.Insert(0, new RestoredFileView(Path.GetFileName(path), "", $"formato {Path.GetExtension(path)} não suportado"));
+                continue;
+            }
+            try
+            {
+                string target = FileReidentifier.OutputPathFor(path, session.Registry, session.Factors);
+                var r = await Task.Run(() => FileReidentifier.RestoreAsync(path, target, session.Registry, session.Factors, ct), ct);
+                string detail = $"{r.Markers} marcadores, {r.Quantities} números"
+                                + (r.UnknownMarkers.Count > 0 ? $"; marcadores que a sessão não conhece: {string.Join(", ", r.UnknownMarkers)}" : "")
+                                + (r.Warnings.Count > 0 ? "; " + string.Join("; ", r.Warnings) : "");
+                RestoredFiles.Insert(0, new RestoredFileView(Path.GetFileName(path), r.OutputPath, detail));
+                done++;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or InvalidOperationException or NotSupportedException or System.Xml.XmlException)
+            {
+                RestoredFiles.Insert(0, new RestoredFileView(Path.GetFileName(path), "", "erro: " + ex.Message));
+            }
+        }
+        Status = $"{done} de {paths.Count} arquivo(s) restaurado(s) ao lado dos originais.";
+    });
 
     // ---- settings -------------------------------------------------------------------------
 

@@ -26,6 +26,9 @@ public partial class MainWindow : Window
         CopyTextButton.Click += async (_, _) => await CopyText(_vm?.ExportText);
         CopyRestoredButton.Click += async (_, _) => await CopyText(_vm?.RestoredText);
         SavePackageButton.Click += OnSavePackage;
+        RestoreFilesButton.Click += OnRestoreFiles;
+        RestoreDropZone.AddHandler(DragDrop.DropEvent, OnRestoreDrop);
+        RestoreDropZone.AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = DragDropEffects.Copy);
         AddLogoButton.Click += OnAddLogo;
         ExportProfileButton.Click += OnExportProfile;
         ImportProfileButton.Click += OnImportProfile;
@@ -123,6 +126,27 @@ public partial class MainWindow : Window
         });
         var paths = picked.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
         if (paths.Count > 0 && _vm.AddFilesCommand.CanExecute(paths)) await _vm.AddFilesCommand.ExecuteAsync(paths);
+    }
+
+    private async void OnRestoreFiles(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is null) return;
+        var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Arquivos que a IA produziu",
+            AllowMultiple = true,
+            FileTypeFilter = [new FilePickerFileType("Arquivos suportados") { Patterns = Extraction.FileReidentifier.Extensions.Select(x => "*" + x).ToList() }],
+        });
+        var paths = picked.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
+        if (paths.Count > 0) await _vm.RestoreFilesAsync(paths);
+    }
+
+    private async void OnRestoreDrop(object? sender, DragEventArgs e)
+    {
+        if (_vm is null) return;
+        var files = e.DataTransfer.TryGetFiles() ?? [];
+        var paths = files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
+        if (paths.Count > 0) await _vm.RestoreFilesAsync(paths);
     }
 
     private async void OnSavePackage(object? sender, RoutedEventArgs e)

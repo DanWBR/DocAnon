@@ -12,6 +12,21 @@ namespace DocAnon.Core.Tests;
 public class PseudonymizationTests
 {
     [Fact]
+    public void ScaledNumberKeepsItsOriginalWhenTheSameNumberIsWrittenTwoWays()
+    {
+        var reg = new EntityRegistry();
+        var flow = new ScaleDimension(1, 0);
+        reg.RecordScaled(flow, "1665", "891");
+        reg.RecordScaled(flow, "1665", "891,0");
+        Assert.Equal("891", reg.OriginalOfScaled(flow, "1665"));
+
+        // Two different numbers that scale to the same text make the key ambiguous.
+        reg.RecordScaled(flow, "2000", "1.000");
+        reg.RecordScaled(flow, "2000", "1");
+        Assert.Null(reg.OriginalOfScaled(flow, "2000"));
+    }
+
+    [Fact]
     public void NumericIdentifiersShareMarkerAcrossFormats()
     {
         var reg = new EntityRegistry();

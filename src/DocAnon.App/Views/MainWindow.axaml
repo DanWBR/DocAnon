@@ -212,9 +212,28 @@
       <TabItem Header="4. Reidentificação">
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,*,Auto" ColumnSpacing="10">
           <TextBlock Classes="groupHeader" Text="Cole a resposta da IA" />
-          <TextBox Grid.Row="1" Text="{Binding AnswerText}" AcceptsReturn="True" VerticalContentAlignment="Top" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas, monospace" />
+          <Grid Grid.Row="1" RowDefinitions="*,Auto,Auto,160">
+            <TextBox Text="{Binding AnswerText}" AcceptsReturn="True" VerticalContentAlignment="Top" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas, monospace" />
+            <TextBlock Grid.Row="1" Classes="groupHeader" Text="Ou restaure os arquivos que a IA produziu" Margin="0,10,0,0" />
+            <TextBlock Grid.Row="2" Classes="muted" TextWrapping="Wrap" Margin="0,0,0,6"
+                       Text="TXT, Markdown, CSV, JSON, HTML, DOCX, PPTX, XLSX e PDF. O arquivo restaurado fica ao lado do original, com o mesmo formato e &quot;.restaurado&quot; no nome. Você também pode soltar os arquivos aqui." />
+            <Border Grid.Row="3" x:Name="RestoreDropZone" DragDrop.AllowDrop="True" Background="Transparent">
+              <ListBox ItemsSource="{Binding RestoredFiles}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RestoredFileView">
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Opacity="0.75" />
+                      <TextBlock Text="{Binding Output}" TextWrapping="Wrap" Opacity="0.6" FontSize="11" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </Border>
+          </Grid>
           <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
             <Button Content="Restaurar valores reais" Command="{Binding RestoreCommand}" Classes="primary" />
+            <Button Classes="action" x:Name="RestoreFilesButton" Content="Restaurar arquivos..." />
             <TextBlock Classes="muted" Text="Use a mesma sessão em que o documento foi anonimizado." VerticalAlignment="Center" />
           </StackPanel>
           <TextBlock Grid.Column="1" Classes="groupHeader" Text="Texto com os valores reais" />

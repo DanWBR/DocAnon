@@ -13,7 +13,8 @@ public enum RestoreKind
     Quantity,
 }
 
-public sealed record RestoredItem(int OutputStart, int OutputLength, string Found, string Restored, RestoreKind Kind);
+/// <summary>A restored value, with its position in the output and in the answer (<paramref name="SourceStart"/>, length of <paramref name="Found"/>).</summary>
+public sealed record RestoredItem(int OutputStart, int OutputLength, string Found, string Restored, RestoreKind Kind, int SourceStart = -1);
 
 public sealed record ReidentificationResult(string Text, IReadOnlyList<RestoredItem> Items)
 {
@@ -57,6 +58,7 @@ public static class Reidentifier
     };
 
     private static readonly Regex MarkerRx = BuildMarkerRegex();
+    private static readonly Regex WhitespaceRx = new(@"\s+", RegexOptions.Compiled);
 
     private static Regex BuildMarkerRegex()
     {
@@ -92,7 +94,8 @@ public static class Reidentifier
             int n = int.Parse(m.Groups["n"].Value);
             var rec = type is null ? null : registry.Find(type.Value, n);
             if (rec is null) edits.Add((m.Index, m.Length, m.Value, RestoreKind.UnknownMarker));
-            else edits.Add((m.Index, m.Length, rec.Canonical, RestoreKind.Marker));
+            // A value found across a line break of the source comes back on one line.
+            else edits.Add((m.Index, m.Length, WhitespaceRx.Replace(rec.Canonical.Trim(), " "), RestoreKind.Marker));
         }
 
         if (unscaleQuantities)
@@ -117,7 +120,7 @@ public static class Reidentifier
         {
             if (start < cursor) continue;
             sb.Append(answer, cursor, start - cursor);
-            items.Add(new RestoredItem(sb.Length, replacement.Length, answer.Substring(start, length), replacement, kind));
+            items.Add(new RestoredItem(sb.Length, replacement.Length, answer.Substring(start, length), replacement, kind, start));
             sb.Append(replacement);
             cursor = start + length;
         }

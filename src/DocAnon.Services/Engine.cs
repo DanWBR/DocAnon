@@ -33,7 +33,18 @@ public sealed class ExportPackage
     public List<string> SkippedPages { get; } = [];
     public List<LeakFinding> TextLeaks { get; init; } = [];
     public List<VisualLeak> VisualLeaks { get; } = [];
-    public bool HasLeaks => TextLeaks.Count > 0 || VisualLeaks.Count > 0;
+
+    /// <summary>The anonymized copy in the format of the source file (DOCX, PPTX, XLSX, PDF, CSV, TXT), when the format has one.</summary>
+    public byte[]? NativeCopy { get; set; }
+
+    public string? NativeCopyExtension { get; set; }
+
+    /// <summary>Real values that the check still finds in the native copy.</summary>
+    public List<LeakFinding> NativeLeaks { get; } = [];
+
+    public List<string> NativeWarnings { get; } = [];
+
+    public bool HasLeaks => TextLeaks.Count > 0 || VisualLeaks.Count > 0 || NativeLeaks.Count > 0;
 }
 
 /// <summary>
@@ -184,29 +195,151 @@ public sealed class Engine : IDisposable
                 pkg.SkippedPages.Add(ex.Message);
             }
         }
-        if (Ocr is not null && pkg.Pages.Count > 0)
+        var originals = session.Registry.Records.Where(r => r.Type != EntityType.VALOR)
+            .SelectMany(r => r.Variants.Select(v => (v, r.Token)))
+            .Concat(profile?.Terms.SelectMany(t => t.Aliases.Prepend(t.Text)).Select(t => (t, "[OCULTO]")) ?? [])
+            .ToList();
+        for (int i = 0; i < pkg.Pages.Count; i++)
         {
-            var originals = session.Registry.Records.Where(r => r.Type != EntityType.VALOR)
-                .SelectMany(r => r.Variants.Select(v => (v, r.Token)))
-                .Concat(profile?.Terms.SelectMany(t => t.Aliases.Prepend(t.Text)).Select(t => (t, "[OCULTO]")) ?? [])
-                .ToList();
-            // Whatever the OCR can still read is covered with its marker, and the page is checked again.
-            for (int i = 0; i < pkg.Pages.Count; i++)
+            var page = pkg.Pages[i].Page;
+            pkg.Pages[i] = CoverWhatOcrStillReads(page, () => redactor.Render(page, reps), pkg.Pages[i], originals, pkg.VisualLeaks);
+        }
+
+        if (doc.Format == "pdf") WritePdfCopy(doc, pkg, profile, reps, redactor, originals);
+        else if (doc.WriteNativeCopy is { } write)
+        {
+            var ctx = new NativeCopyContext
             {
-                var leaks = PageRedactor.CheckWithOcr(Ocr, [pkg.Pages[i]], originals);
-                for (int round = 0; round < 2 && leaks.Count > 0; round++)
-                {
-                    var page = pkg.Pages[i].Page;
-                    float sx = page.WidthPx / (float)Math.Max(1, pkg.Pages[i].Width), sy = page.HeightPx / (float)Math.Max(1, pkg.Pages[i].Height);
-                    foreach (var l in leaks)
-                        page.AutoCovers.Add(new CoverBox(new BoundingBox(l.Box.X * sx, l.Box.Y * sy, l.Box.Width * sx, l.Box.Height * sy), "valor ainda legível, coberto automaticamente", l.Token));
-                    pkg.Pages[i] = redactor.Render(page, reps);
-                    leaks = PageRedactor.CheckWithOcr(Ocr, [pkg.Pages[i]], originals);
-                }
-                pkg.VisualLeaks.AddRange(leaks);
-            }
+                Replacements = reps,
+                Registry = session.Registry,
+                Factors = session.Factors,
+                Profile = profile,
+                CommaIsDecimal = LanguageGuess.CommaIsDecimal(doc.Text),
+                RedactedImages = pkg.Pages.ToDictionary(p => p.Page, p => p.Png),
+            };
+            using var ms = new MemoryStream();
+            write(ctx, ms).GetAwaiter().GetResult();
+            pkg.NativeCopy = ms.ToArray();
+            pkg.NativeCopyExtension = doc.NativeCopyExtension;
+            pkg.NativeLeaks.AddRange(ctx.Leaks);
+            pkg.NativeWarnings.AddRange(ctx.Warnings);
         }
         return pkg;
+    }
+
+    /// <summary>
+    /// Runs OCR on a redacted page. Whatever it can still read is covered with its marker, and the
+    /// page is rendered and checked again, up to two more times. What is left goes to <paramref name="leaks"/>.
+    /// </summary>
+    private RedactedPage CoverWhatOcrStillReads(VisualPage page, Func<RedactedPage> render, RedactedPage current, List<(string, string)> originals, List<VisualLeak> leaks)
+    {
+        if (Ocr is null) return current;
+        var found = PageRedactor.CheckWithOcr(Ocr, [current], originals);
+        for (int round = 0; round < 2 && found.Count > 0; round++)
+        {
+            float sx = page.WidthPx / (float)Math.Max(1, current.Width), sy = page.HeightPx / (float)Math.Max(1, current.Height);
+            foreach (var l in found)
+                page.AutoCovers.Add(new CoverBox(new BoundingBox(l.Box.X * sx, l.Box.Y * sy, l.Box.Width * sx, l.Box.Height * sy), "valor ainda legível, coberto automaticamente", l.Token));
+            current = render();
+            found = PageRedactor.CheckWithOcr(Ocr, [current], originals);
+        }
+        leaks.AddRange(found);
+        return current;
+    }
+
+    /// <summary>
+    /// The PDF copy has every page of the source as a redacted image, in order: the text pages are
+    /// rendered and covered where the text was replaced, the pictures cropped from them are pasted
+    /// back already redacted, and the diagram and scanned pages reuse their exported image.
+    /// </summary>
+    private void WritePdfCopy(ExtractedDocument doc, ExportPackage pkg, CompanyProfile? profile, IReadOnlyList<TextReplacement> reps, PageRedactor redactor, List<(string, string)> originals)
+    {
+        int count = doc.VisualPages.Concat(doc.NativePages).Select(p => p.PdfPage).DefaultIfEmpty(-1).Max() + 1;
+        if (count == 0) return;
+        if (doc.NativePages.Count == 0 && doc.VisualPages.All(p => p.BoxOnPage is not null))
+        {
+            pkg.NativeWarnings.Add("O renderizador de PDF não está disponível, por isso a cópia em PDF não foi gerada.");
+            return;
+        }
+        var byPage = pkg.Pages.ToDictionary(p => p.Page);
+        var pages = new List<RedactedPage>();
+        for (int n = 0; n < count; n++)
+        {
+            var whole = doc.VisualPages.FirstOrDefault(p => p.PdfPage == n && p.BoxOnPage is null);
+            if (whole is not null)
+            {
+                pages.Add(byPage.TryGetValue(whole, out var done) ? done : BlankPage(whole, "página não exportada"));
+                if (!byPage.ContainsKey(whole)) pkg.NativeWarnings.Add($"{whole.Source}: a página não foi exportada e ficou em branco na cópia.");
+                continue;
+            }
+            var native = doc.NativePages.FirstOrDefault(p => p.PdfPage == n);
+            if (native is null)
+            {
+                pkg.NativeWarnings.Add($"página {n + 1}: a página não pôde ser desenhada e ficou de fora da cópia.");
+                continue;
+            }
+            // The redacted pictures go onto the page first, so the covers drawn afterwards stay on top of them.
+            var crops = doc.VisualPages.Where(p => p.PdfPage == n && p.BoxOnPage is not null).ToList();
+            var composite = new VisualPage(native.Index, native.Source, native.WidthPx, native.HeightPx, () => PasteCrops(native.RenderOriginalPng(), native, crops, byPage))
+            {
+                PdfPage = n,
+                TextVerified = true,
+            };
+            composite.Words.AddRange(native.Words);
+            composite.ManualBoxes.AddRange(native.ManualBoxes);
+            composite.AutoCovers.AddRange(native.AutoCovers);
+            ApplyProfileCovers(composite, profile);
+            RedactedPage Render() => redactor.Render(composite, reps);
+            var page = Render();
+            var leaks = new List<VisualLeak>();
+            page = CoverWhatOcrStillReads(composite, Render, page, originals, leaks);
+            pkg.VisualLeaks.AddRange(leaks.Select(l => l with { Source = l.Source + " (cópia PDF)" }));
+            pages.Add(page);
+        }
+        using var ms = new MemoryStream();
+        PageRedactor.WriteImagePdf(pages, ms);
+        pkg.NativeCopy = ms.ToArray();
+        pkg.NativeCopyExtension = ".pdf";
+    }
+
+    /// <summary>Draws each redacted picture over its place on the page, or a grey box when the picture was not exported.</summary>
+    private static byte[] PasteCrops(byte[] pagePng, VisualPage native, List<VisualPage> crops, Dictionary<VisualPage, RedactedPage> exported)
+    {
+        if (crops.Count == 0) return pagePng;
+        using var bmp = SkiaSharp.SKBitmap.Decode(pagePng);
+        using var canvas = new SkiaSharp.SKCanvas(bmp);
+        float sx = bmp.Width / (float)Math.Max(1, native.WidthPx), sy = bmp.Height / (float)Math.Max(1, native.HeightPx);
+        foreach (var crop in crops)
+        {
+            var b = crop.BoxOnPage!.Value;
+            var rect = new SkiaSharp.SKRect(b.X * sx, b.Y * sy, b.Right * sx, b.Bottom * sy);
+            if (exported.TryGetValue(crop, out var red))
+            {
+                using var img = SkiaSharp.SKBitmap.Decode(red.Png);
+                canvas.DrawBitmap(img, rect);
+            }
+            else
+            {
+                using var grey = new SkiaSharp.SKPaint { Color = new SkiaSharp.SKColor(0xC8, 0xC8, 0xC8) };
+                canvas.DrawRect(rect, grey);
+            }
+        }
+        using var image = SkiaSharp.SKImage.FromBitmap(bmp);
+        using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
+    }
+
+    private static RedactedPage BlankPage(VisualPage page, string label)
+    {
+        int w = Math.Max(1, page.WidthPx), h = Math.Max(1, page.HeightPx);
+        using var surface = SkiaSharp.SKSurface.Create(new SkiaSharp.SKImageInfo(w, h));
+        surface.Canvas.Clear(SkiaSharp.SKColors.White);
+        using var font = new SkiaSharp.SKFont(SkiaSharp.SKTypeface.Default, Math.Max(12, w / 30f));
+        using var paint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColors.Gray, IsAntialias = true };
+        surface.Canvas.DrawText($"[{label}]", w / 2f, h / 2f, SkiaSharp.SKTextAlign.Center, font, paint);
+        using var snap = surface.Snapshot();
+        using var data = snap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+        return new RedactedPage(page, data.ToArray(), 0, w, h);
     }
 
     /// <summary>
@@ -273,16 +406,17 @@ public sealed class Engine : IDisposable
             await File.WriteAllBytesAsync(png, pkg.Pages[i].Png);
             written.Add(png);
         }
-        if (pkg.Pages.Count > 0)
+        // When the copy is a PDF it already has every page, so the PDF of the images would repeat part of it.
+        if (pkg.Pages.Count > 0 && pkg.NativeCopyExtension != ".pdf")
         {
             string pdf = Path.Combine(folder, stem + ".imagens.pdf");
             await using (var fs = File.Create(pdf)) PageRedactor.WriteImagePdf(pkg.Pages, fs);
             written.Add(pdf);
         }
-        if (doc.WriteNativeCopy is { } write && doc.NativeCopyExtension is { } ext)
+        if (pkg.NativeCopy is { } copy && pkg.NativeCopyExtension is { } ext)
         {
             string native = Path.Combine(folder, stem + ext);
-            await using (var fs = File.Create(native)) await write(pkg.Anonymized.AsTextReplacements(), fs);
+            await File.WriteAllBytesAsync(native, copy);
             written.Add(native);
         }
         return written;

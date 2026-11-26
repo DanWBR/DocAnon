@@ -120,9 +120,7 @@ public class EndToEndTests(EngineFixture fx) : IClassFixture<EngineFixture>
         var session = Session.CreateNew("visio");
         var spans = await fx.Engine.DetectAsync(doc, FixtureFactory.Profile(), session: session);
         var pkg = fx.Engine.Export(doc, spans, session, FixtureFactory.Profile());
-        using var ms = new MemoryStream();
-        await doc.WriteNativeCopy!(pkg.Anonymized.AsTextReplacements(), ms);
-        ms.Position = 0;
+        using var ms = new MemoryStream(pkg.NativeCopy!);
         using var copy = new System.IO.Compression.ZipArchive(ms);
         string all = string.Concat(copy.Entries.Select(e => new StreamReader(e.Open()).ReadToEnd()));
         Assert.DoesNotContain(FixtureFactory.Client, all);

@@ -67,6 +67,8 @@ Cole o texto no ChatGPT, no Claude ou em outro modelo, junto com as imagens se h
 
 Copie a resposta da IA, abra a aba **4. Reidentificação**, cole a resposta e clique em **Restaurar valores reais**. O DocAnon troca cada marcador pelo valor real e divide os números escalados pelos fatores da sessão. A lista abaixo do texto mostra cada troca. Se a IA inventou um marcador que não existe na sessão, ele aparece como **MARCADOR DESCONHECIDO**.
 
+Se a IA devolveu um arquivo, como um relatório em Word ou uma planilha, clique em **Restaurar arquivos...** na mesma aba. O DocAnon grava uma cópia restaurada ao lado do arquivo da IA, no mesmo formato.
+
 Se a IA calculou um número novo a partir dos números escalados, como uma vazão total, o DocAnon também converte esse número de volta, desde que ele venha com uma unidade que o DocAnon reconheça. Confira esses valores na lista, porque eles foram calculados pela IA.
 
 ## 8. Continue a conversa

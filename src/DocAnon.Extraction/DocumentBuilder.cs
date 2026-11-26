@@ -21,6 +21,9 @@ public sealed class DocumentBuilder
 
     public List<DocumentBlock> Blocks { get; } = [];
     public List<VisualPage> Pages { get; } = [];
+
+    /// <summary>Pages that only go into the native copy (the text pages of a PDF).</summary>
+    public List<VisualPage> NativePages { get; } = [];
     public List<string> Warnings { get; } = [];
     public int Position => _sb.Length;
 
@@ -155,7 +158,7 @@ public sealed class DocumentBuilder
         Record(start, asLabels ? BlockKind.Diagram : BlockKind.Paragraph, source, fromOcr, confidence);
     }
 
-    public ExtractedDocument Build(Func<IReadOnlyList<TextReplacement>, Stream, Task>? nativeCopy = null, string? nativeExt = null)
+    public ExtractedDocument Build(Func<NativeCopyContext, Stream, Task>? nativeCopy = null, string? nativeExt = null)
     {
         var doc = new ExtractedDocument(_fileName, _format, _sb.ToString().TrimEnd() + "\n")
         {
@@ -164,6 +167,7 @@ public sealed class DocumentBuilder
         };
         doc.Blocks.AddRange(Blocks);
         doc.VisualPages.AddRange(Pages);
+        doc.NativePages.AddRange(NativePages);
         doc.Warnings.AddRange(Warnings);
         return doc;
     }

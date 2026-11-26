@@ -10,12 +10,15 @@ public sealed class PlainTextReader : IDocumentReader
 
     public Task<ExtractedDocument> ReadAsync(string path, ExtractionOptions o, CancellationToken ct)
     {
-        string text = ReadText(File.ReadAllBytes(path)).Replace("\r\n", "\n");
+        byte[] bytes = File.ReadAllBytes(path);
+        string text = ReadText(bytes).Replace("\r\n", "\n");
         string ext = Path.GetExtension(path).ToLowerInvariant();
         var b = new DocumentBuilder(Path.GetFileName(path), ext.TrimStart('.'));
         if (ext == ".csv") b.Table(ParseCsv(text), "csv");
         else b.Paragraph(text, "texto");
-        return Task.FromResult(b.Build());
+        // Markdown already goes out as Markdown, so only the other formats get a copy of their own.
+        if (ext is ".md" or ".markdown") return Task.FromResult(b.Build());
+        return Task.FromResult(b.Build(Native.PlainCopies.CopyWriter(bytes, csv: ext == ".csv"), ext));
     }
 
     /// <summary>UTF-8 with or without BOM, UTF-16 with BOM, or Windows-1252 when the bytes are not valid UTF-8.</summary>

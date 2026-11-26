@@ -23,7 +23,9 @@ A documentação completa está publicada em [danwbr.github.io/DocAnon](https://
 | DXF, SVG | texto dos objetos, com o desenho redesenhado com os marcadores |
 | Visio (.vsdx) | texto das formas e uma cópia anonimizada do .vsdx |
 
-A saída é Markdown. Diagramas, páginas escaneadas e imagens também saem como PNG e como um PDF que contém só imagens, sem camada de texto.
+A saída é Markdown. Diagramas, páginas escaneadas e imagens também saem como PNG e como um PDF que contém só imagens, sem camada de texto. Os arquivos DOCX, XLSX, PPTX, PDF, CSV e TXT também ganham uma cópia anonimizada no mesmo formato, que pode ser anexada na IA no lugar do original.
+
+Na volta, o DocAnon restaura os valores reais nos arquivos que a IA produzir (TXT, MD, CSV, JSON, XML, HTML, DOCX, PPTX, XLSX e PDF) e mantém o formato de cada um.
 
 ## O que é detectado
 
@@ -53,7 +55,7 @@ Uma sessão corresponde a uma conversa com a IA. Os documentos de uma sessão co
 2. Arraste os documentos ou cole um texto.
 3. Na aba **Revisão**, confira a lista. Itens desmarcados não são alterados. Selecione um trecho no texto e use o botão direito para marcar, adicionar ao perfil ou criar uma exceção. Na sub-aba **Imagens**, clique nas tarjas azuis para ligar ou desligar e arraste para desenhar tarjas novas.
 4. Clique em **Anonimizar e verificar vazamentos**. A cópia só é liberada depois que a checagem passa ou depois que você confirma que revisou os apontamentos.
-5. Cole a resposta da IA na aba **Reidentificação**.
+5. Cole a resposta da IA na aba **Reidentificação**. Se a IA devolveu arquivos, use **Restaurar arquivos...** na mesma aba.
 
 ## Modelos para o Ollama
 

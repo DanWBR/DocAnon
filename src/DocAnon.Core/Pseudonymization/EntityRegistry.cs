@@ -41,8 +41,18 @@ public sealed partial class EntityRegistry
     public void RecordScaled(ScaleDimension d, string scaledText, string originalText)
     {
         string k = ScaledKey(d, scaledText);
-        if (ScaledNumbers.TryGetValue(k, out var existing) && existing != originalText) ScaledNumbers[k] = null;
-        else ScaledNumbers[k] = originalText;
+        if (!ScaledNumbers.TryGetValue(k, out var existing)) ScaledNumbers[k] = originalText;
+        // "891" and "891,0" are the same number, so the key stays usable and keeps the first text.
+        else if (existing is not null && existing != originalText && WithoutTrailingZeros(existing) != WithoutTrailingZeros(originalText)) ScaledNumbers[k] = null;
+    }
+
+    private static string WithoutTrailingZeros(string number)
+    {
+        // Three zeros after the separator may be a thousands group ("1.000"), so only one or two count.
+        int sep = number.LastIndexOfAny([',', '.']);
+        if (sep < 0) return number;
+        string decimals = number[(sep + 1)..];
+        return decimals.Length is 1 or 2 && decimals.All(c => c == '0') ? number[..sep] : number;
     }
 
     public string? OriginalOfScaled(ScaleDimension d, string scaledText) =>

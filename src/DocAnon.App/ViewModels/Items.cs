@@ -128,3 +128,6 @@ public sealed partial class ProfileTermItem : ObservableObject
 public sealed record LeakItem(string Where, string Text, string Reason);
 
 public sealed record RestoredView(string Found, string Restored, string Kind);
+
+/// <summary>A file of the AI restored on disk: its name, where the restored copy went and what changed.</summary>
+public sealed record RestoredFileView(string Name, string Output, string Detail);

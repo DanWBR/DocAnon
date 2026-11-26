@@ -95,7 +95,7 @@ O botão aplica as escolhas da revisão, gera o texto e as imagens, roda a checa
 | Controle | O que faz |
 |---|---|
 | **Copiar texto** | copia o Markdown anonimizado para a área de transferência |
-| **Salvar pacote** | grava numa pasta o Markdown, um PNG por imagem, um PDF só com as imagens e, para arquivos Visio, uma cópia `.vsdx` anonimizada |
+| **Salvar pacote** | grava numa pasta o Markdown, um PNG por imagem, um PDF só com as imagens e a cópia anonimizada no formato do original (DOCX, PPTX, XLSX, PDF, CSV, TXT ou VSDX) |
 | **Checagem de vazamento** | lista cada valor real que ainda aparece, com o motivo |
 | **Revisei os pontos acima e quero liberar a cópia** | libera a cópia quando a checagem encontrou pontos que você considera aceitáveis |
 | **Imagens tarjadas** e **Copiar imagem** | mostram cada imagem e copiam uma de cada vez para colar na IA |
@@ -109,6 +109,8 @@ Os botões de cópia ficam bloqueados enquanto a checagem tiver pontos abertos e
 3. Copie o texto da direita com **Copiar texto restaurado**.
 
 A lista de baixo mostra cada marcador restaurado e cada número convertido. O DocAnon reconhece os marcadores mesmo quando a IA muda a forma deles, como `[Pessoa 1]`, `PESSOA_1`, `**[PESSOA_1]**` ou a versão em inglês `[PERSON_1]`. Se a IA criar um marcador que não existe na sessão, ele aparece como **MARCADOR DESCONHECIDO** e fica como está no texto.
+
+Se a IA devolveu um arquivo, clique em **Restaurar arquivos...** e escolha um ou mais arquivos, ou solte os arquivos na lista. O DocAnon grava cada arquivo restaurado ao lado do original, no mesmo formato e com `.restaurado` antes da extensão. A lista mostra quantos marcadores e números cada arquivo teve e os marcadores que a sessão não conhece. A página [Formatos de arquivo](formatos.md#arquivos-que-a-ia-produz) explica como cada formato é restaurado.
 
 A reidentificação usa a sessão aberta. Por isso, abra a mesma sessão em que o documento foi anonimizado.
 
