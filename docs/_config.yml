@@ -2,8 +2,7 @@
 #
 # Theme: Just the Docs (remote theme, so GitHub Pages builds the site on the server).
 # Source: /docs (Settings → Pages → "Deploy from a branch" → Branch: master, Folder: /docs).
-# GitHub Pages only publishes private repositories on paid plans; the pages also read
-# well directly on GitHub.
+# Published at https://danwbr.github.io/DocAnon/ and rebuilt on every push to master.
 
 title: DocAnon
 description: >-
