@@ -1,5 +1,7 @@
 # DocAnon
 
+[![Windows installer](https://github.com/DanWBR/DocAnon/actions/workflows/windows-installer.yml/badge.svg)](https://github.com/DanWBR/DocAnon/actions/workflows/windows-installer.yml)
+
 DocAnon anonimiza documentos no seu computador antes que você os envie a um modelo de IA hospedado em outro país (ChatGPT, Claude, Gemini e outros). Ele encontra dados pessoais e segredos industriais e troca cada um por um marcador estável (`[PESSOA_1]`, `[EMPRESA_2]`, `[UNIDADE_1]`). Os números de processo e de negócio são multiplicados por um fator secreto, e o resultado sai como texto e imagens tarjadas. Quando a resposta da IA volta, o DocAnon restaura os nomes reais e desfaz a escala dos números.
 
 Tudo roda localmente. O único acesso de rede possível é ao Ollama neste computador (127.0.0.1), e só quando você o liga nas configurações.
@@ -111,12 +113,12 @@ Instalação silenciosa, só para o usuário atual:
 
 ## Compilação
 
-Requisitos: .NET 10 SDK e Python 3 com os pacotes `onnx` e `onnxruntime`. O Python só é usado para preparar o modelo de NER.
+Requisitos: .NET 10 SDK e Python 3 com os pacotes `onnx` 1.21.0 e `onnxruntime` 1.24.4. O Python só é usado para preparar o modelo de NER, e as versões são fixas porque outras versões gravam um modelo quantizado diferente.
 
 1. Baixe os modelos e prepare o modelo quantizado:
 
    ```powershell
-   pip install onnx onnxruntime
+   pip install onnx==1.21.0 onnxruntime==1.24.4
    .\tools\fetch-models.ps1
    ```
 

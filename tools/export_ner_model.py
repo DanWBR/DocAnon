@@ -82,7 +82,16 @@ def main() -> int:
         from onnxruntime.quantization import QuantType, quantize_dynamic
 
         print("quantizing to int8 ...")
-        quantize_dynamic(str(float_model), str(target_model), weight_type=QuantType.QInt8)
+        # On x86 CPUs with AVX2 or AVX-512 but without VNNI, the u8s8 kernels saturate with full
+        # 8-bit weights and the model stops finding entities. 7-bit weights (reduce_range) avoid the
+        # saturation, and per-channel scales recover the accuracy that reduce_range alone loses.
+        quantize_dynamic(
+            str(float_model),
+            str(target_model),
+            weight_type=QuantType.QInt8,
+            reduce_range=True,
+            per_channel=True,
+        )
 
     shutil.copyfile(source / "vocab.txt", out / "vocab.txt")
 
@@ -99,7 +108,8 @@ def main() -> int:
         "license": args.license,
         "quantized": not args.no_quantize,
     }
-    (out / "ner-model.json").write_text(json.dumps(descriptor, indent=2, ensure_ascii=False), encoding="utf-8")
+    # LF endings keep the file byte-identical on every OS, because models/** is checked out as-is.
+    (out / "ner-model.json").write_text(json.dumps(descriptor, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n")
     print(f"wrote {target_model} ({target_model.stat().st_size / 1e6:.0f} MB)")
     return 0
 

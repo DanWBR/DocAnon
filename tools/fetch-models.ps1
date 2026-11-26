@@ -11,8 +11,9 @@
       models\ner\          model.onnx quantized to int8 by tools\export_ner_model.py
       models\tessdata\     por.traineddata and eng.traineddata from tesseract-ocr/tessdata_best
 
-    If models\ner\model.onnx already exists, the script skips the 709 MB download and the
-    quantization. The quantization needs Python 3 with the onnx and onnxruntime packages.
+    If models\ner\model.onnx already exists with the expected SHA-256, the script skips the
+    709 MB download and the quantization. The quantization needs Python 3 with onnx 1.21.0 and
+    onnxruntime 1.24.4, because other versions write a different file.
 
 .PARAMETER Python
     Python executable used for the quantization.
@@ -45,6 +46,8 @@ $nerFiles = @(
     @{ Remote = "tokenizer_config.json"; Local = "tokenizer_config.json"; Sha256 = "91ac1b72b75113bf4d6ea69cf70932484fc4bc28394a6be4069f10f123293398" },
     @{ Remote = "vocab.txt"; Local = "vocab.txt"; Sha256 = "fe0fda7c425b48c516fc8f160d594c8022a0808447475c1a7c6d6479763f310c" }
 )
+# tools\export_ner_model.py output with onnx 1.21.0 and onnxruntime 1.24.4 (int8, reduce_range, per_channel).
+$quantizedSha256 = "871cd401c08cc42c7ad346de4091ca875a1b049e6606e25375cbee6fb41c6678"
 $tessFiles = @(
     @{ Name = "por.traineddata"; Sha256 = "711de9dbb8052067bd42f16b9119967f30bada80d57e2ef24f65d09f531adb04" },
     @{ Name = "eng.traineddata"; Sha256 = "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba" }
@@ -70,7 +73,7 @@ function Get-Verified([string]$url, [string]$path, [string]$expected) {
 
 # ------------------------------------------------------------------ NER ----
 $quantized = Join-Path $nerDir "model.onnx"
-if ($Force -or -not (Test-Path $quantized)) {
+if ($Force -or -not (Test-Sha256 $quantized $quantizedSha256)) {
     Write-Step "Downloading $hfModel"
     New-Item -ItemType Directory -Force -Path $sourceDir | Out-Null
     foreach ($f in $nerFiles) {
@@ -83,6 +86,9 @@ if ($Force -or -not (Test-Path $quantized)) {
     & $Python (Join-Path $repoRoot "tools\export_ner_model.py") --source $sourceDir --out $nerDir `
         --model-id $hfModel --license afl-3.0
     if ($LASTEXITCODE -ne 0) { throw "export_ner_model.py failed" }
+    if (-not (Test-Sha256 $quantized $quantizedSha256)) {
+        throw "The quantized model has an unexpected SHA-256. Use onnx 1.21.0 and onnxruntime 1.24.4."
+    }
 }
 else {
     Write-Step "NER model already prepared ($quantized)"
