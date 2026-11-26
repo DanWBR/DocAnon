@@ -11,11 +11,19 @@ namespace DocAnon.Redaction;
 /// </summary>
 public static class LogoMatcher
 {
+    private static SKBitmap? TryDecode(byte[]? data)
+    {
+        if (data is null || data.Length == 0) return null;
+        using var codec = SKCodec.Create(new SKMemoryStream(data));
+        return codec is null ? null : SKBitmap.Decode(codec);
+    }
+
     public static List<(BoundingBox Box, double Score)> Find(byte[] pagePng, byte[] logoPng, double threshold = 0.7,
         double minWidthFraction = 0.01, double maxWidthFraction = 0.35)
     {
-        using var page = SKBitmap.Decode(pagePng);
-        using var logo = SKBitmap.Decode(logoPng);
+        // A logo file that went missing arrives empty, and Skia throws on data it cannot decode.
+        using var page = TryDecode(pagePng);
+        using var logo = TryDecode(logoPng);
         if (page is null || logo is null) return [];
         double aspect = logo.Height / (double)logo.Width;
         var results = new List<(BoundingBox, double)>();

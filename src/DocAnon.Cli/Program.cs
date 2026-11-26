@@ -295,5 +295,7 @@ catch (Exception ex) when (ex is InvalidOperationException or FileNotFoundExcept
                                or UnauthorizedAccessException or ArgumentException or System.Security.Cryptography.CryptographicException or JsonException)
 {
     Console.Error.WriteLine("erro: " + (ex is System.Security.Cryptography.CryptographicException ? "senha errada ou cofre de outro usuário." : ex.Message));
+    // DOCANON_DEBUG=1 prints the whole exception, for bug reports.
+    if (Environment.GetEnvironmentVariable("DOCANON_DEBUG") == "1") Console.Error.WriteLine(ex);
     return 1;
 }

@@ -423,30 +423,42 @@ internal sealed class OfficePackage
     /// <summary>Attributes that carry text a person wrote: alternative text and titles of pictures and shapes.</summary>
     private static readonly HashSet<string> TextAttributes = ["descr", "title"];
 
+    /// <summary>Elements whose "name" attribute holds the picture's file name or a name the author typed.</summary>
+    private static readonly HashSet<string> NamedElements = ["docPr", "cNvPr"];
+
     /// <summary>
     /// Every other piece of text in the package (masters, layouts, charts, SmartArt, text in
-    /// properties, alternative text), one node per line. Cell values and formulas of worksheets are
-    /// left out, because a marker there would break the cell.
+    /// properties, alternative text and picture names). The runs of one paragraph stay together,
+    /// so a value split across two runs is read whole. In <paramref name="mainParts"/>, which the
+    /// main map already covered, only field codes and attributes are read. Cell values and
+    /// formulas of worksheets are left out, because a marker there would break the cell.
     /// </summary>
-    public TextMap OtherText(HashSet<string> skip)
+    public TextMap OtherText(HashSet<string> mainParts)
     {
         var map = new TextMap();
         foreach (var (name, doc) in Xml)
         {
-            if (skip.Contains(name) || name.EndsWith(".rels", StringComparison.OrdinalIgnoreCase) || name.Equals("[Content_Types].xml", StringComparison.OrdinalIgnoreCase)) continue;
+            if (name.EndsWith(".rels", StringComparison.OrdinalIgnoreCase) || name.Equals("[Content_Types].xml", StringComparison.OrdinalIgnoreCase)) continue;
+            bool main = mainParts.Contains(name);
             bool sheet = name.StartsWith("xl/worksheets/", StringComparison.OrdinalIgnoreCase);
+            XElement? paragraph = null;
             foreach (var e in doc.Descendants())
             {
-                foreach (var a in e.Attributes().Where(a => TextAttributes.Contains(a.Name.LocalName) && a.Value.Length > 0))
+                foreach (var a in e.Attributes().Where(a => a.Value.Length > 0 && (TextAttributes.Contains(a.Name.LocalName) || (a.Name.LocalName == "name" && NamedElements.Contains(e.Name.LocalName)))))
                 {
                     var attr = a;
+                    map.Separator("\n");
                     map.Add(attr.Value, v => attr.Value = v);
                     map.Separator("\n");
+                    paragraph = null;
                 }
                 if (e.HasElements || e.Nodes().OfType<XText>().All(t => t.Value.Trim().Length == 0)) continue;
                 if (sheet && e.Name.LocalName is "v" or "f") continue;
+                if (main && e.Name.LocalName != "instrText") continue;
+                var para = e.Ancestors().FirstOrDefault(x => x.Name.LocalName == "p");
+                if (para is null || para != paragraph) map.Separator("\n");
+                paragraph = para;
                 AddTextNode(map, e);
-                map.Separator("\n");
             }
         }
         return map;

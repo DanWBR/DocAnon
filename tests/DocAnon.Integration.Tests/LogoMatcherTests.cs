@@ -25,6 +25,15 @@ public class LogoMatcherTests
         return d.ToArray();
     }
 
+    [Fact]
+    public void MissingOrBrokenLogoFindsNothing()
+    {
+        using var logo = Logo();
+        byte[] page = Png(logo);
+        Assert.Empty(LogoMatcher.Find(page, []));
+        Assert.Empty(LogoMatcher.Find(page, [1, 2, 3, 4]));
+    }
+
     [Theory]
     [InlineData(1.0f)]
     [InlineData(0.63f)]

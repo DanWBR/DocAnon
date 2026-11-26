@@ -22,7 +22,7 @@ internal static class OfficeCopies
         var pkg = OfficePackage.Load(source);
         if (pkg.Kind == OfficeKind.Word) RemoveDeletedRevisions(pkg);
 
-        var (main, _) = pkg.MainText();
+        var (main, mainParts) = pkg.MainText();
         TextMap.CheckLeaks(c, main.Anonymize(c), "texto");
         if (pkg.Kind == OfficeKind.Excel)
         {
@@ -37,7 +37,7 @@ internal static class OfficeCopies
                 calc.SetAttributeValue("fullCalcOnLoad", "1");
             }
         }
-        var other = pkg.OtherText([]);
+        var other = pkg.OtherText(mainParts);
         TextMap.CheckLeaks(c, other.Anonymize(c, quantities: false), "outras partes do arquivo");
 
         ScrubPeople(pkg);

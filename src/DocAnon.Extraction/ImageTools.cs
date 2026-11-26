@@ -8,11 +8,22 @@ internal static class ImageTools
     /// <summary>Decodes any image Skia understands and re-encodes it as PNG.</summary>
     public static (byte[] Png, int W, int H)? ToPng(byte[] data)
     {
-        using var bmp = SKBitmap.Decode(data);
+        using var bmp = TryDecode(data);
         if (bmp is null) return null;
         using var img = SKImage.FromBitmap(bmp);
         using var enc = img.Encode(SKEncodedImageFormat.Png, 100);
         return (enc.ToArray(), bmp.Width, bmp.Height);
+    }
+
+    /// <summary>
+    /// Decodes an image, or returns null when Skia does not know the format (EMF, WMF, empty data).
+    /// SKBitmap.Decode throws in that case instead of returning null.
+    /// </summary>
+    public static SKBitmap? TryDecode(byte[]? data)
+    {
+        if (data is null || data.Length == 0) return null;
+        using var codec = SKCodec.Create(new SKMemoryStream(data));
+        return codec is null ? null : SKBitmap.Decode(codec);
     }
 
     public static (byte[] Png, int W, int H) Crop(byte[] png, BoundingBox box)

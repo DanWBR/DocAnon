@@ -73,6 +73,7 @@ Se você encontrar algo que não deveria sair, como uma assinatura desenhada à 
 
 ## Limitações
 
+- Num PDF, quando uma palavra da camada de texto não é legível (fonte sem a tabela ToUnicode), o DocAnon não sabe o que ela diz, mas sabe onde ela está. Como as fontes de CAD feitas de traços costumam enganar o OCR também, o lugar dessa palavra começa tarjado, com o motivo "texto ilegível na camada de texto do PDF". Se a palavra não for sigilosa, desmarque a tarja na sub-aba **Imagens**.
 - Um texto que o OCR não consegue ler em nenhuma das três orientações também não é verificado. Isso acontece com texto muito pequeno, com fontes estilizadas ou com texto encostado em linhas da tabela do carimbo. Para esses casos, use as regiões fixas do perfil ou desenhe a tarja à mão.
 - O DocAnon não desenha arquivos Visio. Para obter a imagem tarjada, exporte o desenho para PDF ou SVG e abra esse arquivo.
 - Num SVG com imagens raster embutidas, o texto dessas imagens não pode ser verificado, e por isso a imagem tarjada do SVG não é exportada.

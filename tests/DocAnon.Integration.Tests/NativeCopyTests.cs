@@ -157,6 +157,28 @@ public class NativeCopyTests(EngineFixture fx) : IClassFixture<EngineFixture>
     }
 
     [Fact]
+    public async Task ValueInsideALongerNumberSplitAcrossRunsStays()
+    {
+        string path = Path.Combine(fx.Folder, "runs-tag.docx");
+        using (var doc = WordprocessingDocument.Create(path, DocumentFormat.OpenXml.WordprocessingDocumentType.Document))
+        {
+            var main = doc.AddMainDocumentPart();
+            main.Document = new W.Document(new W.Body(
+                new W.Paragraph(new W.Run(new W.Text("A unidade 9030 opera."))),
+                new W.Paragraph(new W.Run(new W.Text("Tocha TA-9030")), new W.Run(new W.Text("4")))));
+        }
+        var extracted = await fx.Engine.ExtractAsync(path);
+        var session = Session.CreateNew("tag");
+        session.Registry.GetOrCreate(Core.Model.EntityType.UNIDADE, "9030");
+        var pkg = fx.Engine.Export(extracted, [], session, null);
+        string copy = Path.Combine(fx.Folder, "runs-tag.anon.docx");
+        await File.WriteAllBytesAsync(copy, pkg.NativeCopy!);
+        var back = await fx.Engine.ExtractAsync(copy);
+        Assert.Contains("A unidade [UNIDADE_1] opera.", back.Text);
+        Assert.Contains("Tocha TA-90304", back.Text);
+    }
+
+    [Fact]
     public async Task OfficeCopyDropsAuthorsAndDeletedText()
     {
         string path = Path.Combine(fx.Folder, "revisado.docx");

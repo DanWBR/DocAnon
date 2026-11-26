@@ -44,14 +44,21 @@ public sealed class PdfDocumentReader : IDocumentReader
             int letters = words.Sum(w => w.Text.Length);
 
             // A font without a ToUnicode map gives control or private-use characters instead of
-            // text. If the detectors read that layer, they would not see the names drawn on the
-            // page, so a page with unreadable text goes through OCR like a scan.
-            int unreadable = words.Sum(w => w.Text.Count(Unreadable));
-            if (unreadable > 0 && unreadable > 0.05 * letters)
+            // text, and the detectors would not see the names drawn with it. Those words are
+            // dropped, and the OCR reads what they covered. When almost nothing readable is left,
+            // the page goes through OCR like a scan.
+            // CAD stroke fonts often defeat the OCR as well, so the place of each unreadable word
+            // is covered by default; the user can uncover it on the review screen.
+            var unreadableBoxes = words.Where(w => w.Text.Any(Unreadable)).Select(w => w.Box).ToList();
+            int dropped = words.RemoveAll(w => w.Text.Any(Unreadable));
+            if (dropped > 0)
             {
-                b.Warnings.Add($"{source}: a camada de texto do PDF não é legível ({unreadable} de {letters} caracteres), por isso a página passou pelo OCR.");
-                words.Clear();
-                letters = 0;
+                letters = words.Sum(w => w.Text.Length);
+                b.Warnings.Add($"{source}: {dropped} palavra(s) da camada de texto do PDF não são legíveis. O OCR leu essa parte da página, e o lugar de cada uma começa tarjado.");
+            }
+            void CoverUnreadable(VisualPage? target)
+            {
+                foreach (var box in unreadableBoxes) target?.AutoCovers.Add(new CoverBox(box, "texto ilegível na camada de texto do PDF"));
             }
 
             byte[]? rendered = null;
@@ -77,6 +84,7 @@ public sealed class PdfDocumentReader : IDocumentReader
                 bool vectorDrawing = o.Diagrams == DiagramDetection.AllPages || (o.Diagrams == DiagramDetection.Auto && page.Paths.Count >= 40);
                 if (vectorDrawing) b.Heading($"Diagrama, {source}", 2, source);
                 var whole = ImageTools.AddImage(b, o, rendered!, source, asLabels: vectorDrawing, pdfPage: index);
+                CoverUnreadable(whole);
                 if (vectorDrawing && whole is not null)
                 {
                     var vp = whole;
@@ -112,6 +120,7 @@ public sealed class PdfDocumentReader : IDocumentReader
                 b.Heading($"Diagrama, {source}", 2, source);
                 b.PlacedText(words, source, asLabels: true, page: vp, fromOcr: false);
                 AddImageOnlyText(b, o, png, words, vp, source);
+                CoverUnreadable(vp);
                 // Small raster images on a drawing are usually logos, stamps or scanned signatures.
                 double area = page.Width * page.Height;
                 foreach (var img in page.GetImages())
@@ -136,6 +145,9 @@ public sealed class PdfDocumentReader : IDocumentReader
                 b.NativePages.Add(native);
             }
             b.PlacedText(words, source, asLabels: false, page: native, fromOcr: false);
+            // The OCR reads the words the text layer could not give, and they are covered in the PDF copy too.
+            if (dropped > 0 && native is not null && Render()) AddImageOnlyText(b, o, rendered!, words, native, source);
+            CoverUnreadable(native);
 
             double pageArea = page.Width * page.Height;
             int k = 0;
@@ -182,8 +194,14 @@ public sealed class PdfDocumentReader : IDocumentReader
         return new BoundingBox((float)(x0 * scale), (float)(y0 * scale), (float)((x1 - x0) * scale), (float)((y1 - y0) * scale));
     }
 
+    /// <summary>
+    /// Control characters and private-use characters mean the font has no usable text map. The
+    /// range U+F000–F0FF is left out, because Symbol and Wingdings put their equation signs and
+    /// bullets there, on pages whose text is otherwise fine.
+    /// </summary>
     private static bool Unreadable(char c) =>
-        c == '�' || (char.IsControl(c) && c is not ('\t' or '\n' or '\r')) || char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.PrivateUse;
+        c == '�' || (char.IsControl(c) && c is not ('\t' or '\n' or '\r'))
+        || (char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.PrivateUse && c is not (>= '' and <= ''));
 
     private static bool LooksLikeDiagram(Page page, List<PlacedWord> words)
     {
